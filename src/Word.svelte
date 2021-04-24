@@ -1,56 +1,25 @@
 <script type="ts">
-  import { tick, onDestroy } from "svelte";
-  import scoredFile from "./crossword_wordlist.txt";
+  import type { Word } from "./puzzleStore";
+  import { tick, onDestroy, getContext } from "svelte";
   export let playMode;
-  export let onMatch = (matches) => {};
-  let clue = "";
-  let lines = scoredFile.split("\n");
-  export const scores = {};
-  export const words = [];
-  for (let line of lines) {
-    let [word, score] = line.split(";");
-    word = word.replace(" ", "").toUpperCase();
-    words.push(word);
-    scores[word] = Number(score);
-  }
+  import { words, scores } from "./findMatches";
 
-  let matches = [];
-  export let word: string = "";
+  export let word: Word;
   let needsMatch = false;
   let isWord = false;
   let forceShow = false;
   let lastWord;
-  $: if (word != lastWord) {
+  let { matches, clues } = getContext("puzzleContext");
+  let wordMatches = [];
+  $: wordMatches = $matches[word.word];
+  $: if (word.word != lastWord) {
     forceShow = false;
-    lastWord = words;
+    lastWord = word.word;
   }
 
-  $: needsMatch = word.indexOf("?") > -1;
+  $: needsMatch = word.word.indexOf("?") > -1;
 
-  function updateMatches() {
-    let matcher = new RegExp("^" + word.replace(/[?]/g, ".") + "$", "i");
-    matches = words.filter((w) => w.match(matcher));
-    matches.sort((a, b) => scores[b] - scores[a]);
-    onMatch(matches);
-  }
-
-  onDestroy(() => {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-  });
-
-  let timeout;
-  function launchMatch(word) {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(updateMatches, 250);
-  }
-
-  $: if (needsMatch) {
-    launchMatch(word);
-  } else {
+  $: if (!needsMatch) {
     updateCompleteWord();
   }
 
@@ -61,19 +30,18 @@
     } else {
       isWord = false;
     }
-    onMatch([word]);
   }
 </script>
 
 {#if playMode}
-  <b>{clue}</b>
+  <b>{$clues[word.type][word.index]}</b>
 {:else}
   <span class:complete={!needsMatch} class:exists={!!isWord}>
-    {word}
+    {word.word}
     {#if !needsMatch}
       {#if isWord}
-        <span class={`score score-${Math.round(scores[word] / 10)}`}
-          >{scores[word]}</span
+        <span class={`score score-${Math.round(scores[word.word] / 10)}`}
+          >{scores[word.word]}</span
         >
       {:else}
         <span class="score score-0">Not on list</span>
@@ -82,11 +50,11 @@
   </span>
   {#if needsMatch}
     <a href="#" on:click={() => (forceShow = !forceShow)}
-      >{matches.length} matches</a
+      >{wordMatches?.length} matches</a
     >
-    {#if matches.length < 5 || forceShow}
+    {#if wordMatches?.length < 5 || forceShow}
       <ul>
-        {#each matches as match}
+        {#each wordMatches || [] as match}
           <li>
             {match}
             <span class={`score score-${Math.round(scores[match] / 10)}`}
@@ -99,7 +67,7 @@
       </ul>
     {/if}
   {:else}
-    Clue: <input type="text" bind:value={clue} />
+    Clue: <input type="text" bind:value={$clues[word.type][word.index]} />
   {/if}
 {/if}
 

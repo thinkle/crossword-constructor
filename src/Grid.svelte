@@ -1,47 +1,55 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, setContext, getContext } from "svelte";
+  import { makePuzzleStore } from "./puzzleStore";
+  import type {Word} from './puzzleStore'
   import WordLists from "./WordLists.svelte";
+  import DownloadButton from './DownloadButton.svelte';
+  import Saver from './Saver.svelte';
+  import {createPuzzleFile} from './acrosslite'
   export let playMode;
-  export let x: number;
-  export let y: number;
-  export let letters = [];
+  export let xsize: number;
+  export let ysize: number;
+  export let initialLetters = [];
+  let size = 2;
+  let p = makePuzzleStore(initialLetters, xsize, ysize);
+  console.log('Made magic',p)
+  setContext("puzzleContext", p);
+  let {
+    x, y, numbers, letters, possibleLetters,
+    clues, acrosses, downs
+  } = p;
 
-  let size = 1;
+  console.log('Initial store values',
+    $x,$y,$numbers,$letters,$possibleLetters,$clues
+  )
 
-  $: if (x * y > 64) {
+  $: console.log('Possible letters:',$possibleLetters)
+  $: $x = xsize;
+  $: $y = ysize;
+
+  $: if ($x * $y > 64) {
     size = 2;
-  } else if (x * y > 400) {
+  } else if ($x * $y > 400) {
     size = 1;
   } else {
     size = 3;
   }
 
-  $: if (letters.length != x * y) {
-    letters = letters.slice(0, x * y);
-    while (letters.length < x * y) {
-      letters.push("");
+  $: if ($letters.length != $x * $y) {    
+    $letters = $letters.slice(0, $x * $y);
+    while ($letters.length < $x * $y) {
+      $letters.push('?');
     }
+    // Wait to change otherwise we do tons of extra work as we go
+    $letters = $letters;
   }
-
-  function oneCap(s) {
-    s.replace("?", "");
-    if (s == ".") {
-      return ".";
-    } else {
-      if (s.length > 1) {
-        return s[s.length - 1].toUpperCase();
-      } else {
-        return s.toUpperCase() || "?";
-      }
-    }
-  }
-  $: letters = letters.map(oneCap);
+  
   let ROW = 1;
   let COL = 2;
   let mode: ROW | COL = ROW;
   let activeCol: number | null = null;
   let activeRow: number | null = null;
-
+  let activeWord : Word | null = null;
   $: if (mode == ROW) {
     activeCol = null;
   }
@@ -50,25 +58,34 @@
   }
 
   function isInput(event) {
-    return event.code.indexOf("Key") > -1 || event.code == "Period";
+    console.log('key?',event.key)
+    return event.key.length==1 && event.key.match(/[A-Za-z.]/)
+  }
+
+  function updateActiveWord (idx) {
+    if (mode == ROW) {
+      activeWord = $acrosses.find(
+        (word : Word)=>word.indices.indexOf(idx)>-1
+      )
+    } else {
+      activeWord = $downs.find(
+        (word : Word)=>word.indices.indexOf(idx)>-1
+      );
+    }
   }
 
   function onFocus(event) {
     let idx = Number(event.target.getAttribute("item"));
     let cn = idx % x;
-    let rn = Math.floor(idx / x);
-    if (mode == ROW) {
-      activeRow = rn;
-    } else {
-      activeCol = cn;
-    }
+    let rn = Math.floor(idx / $x);
+    updateActiveWord(idx)
     event.target.select();
   }
 
   function getInfo(idx) {
     return {
-      cn: idx % x,
-      rn: Math.floor(idx / x),
+      cn: idx % $x,
+      rn: Math.floor(idx / $x),
     };
   }
 
@@ -78,12 +95,12 @@
 
   function moveRight(idx, amount = 1) {
     let { cn, rn } = getInfo(idx);
-    let next = rn * x + cn + amount;
-    if (next >= x * y) {
+    let next = rn * $x + cn + amount;
+    if (next >= $x * $y) {
       next = 0;
     }
     if (next < 0) {
-      next = x * y - 1;
+      next = $x * $y - 1;
     }
     let input = getInput(next);
     input.focus();
@@ -92,9 +109,9 @@
 
   function moveDown(idx, amount = 1) {
     let { rn, cn } = getInfo(idx);
-    let next = (rn + amount) * x + cn;
-    if (next >= x * y) {
-      if (cn < x - 1) {
+    let next = (rn + amount) * $x + cn;
+    if (next >= $x * $y) {
+      if (cn < $x - 1) {
         next = cn + 1;
       } else {
         next = 0;
@@ -105,21 +122,40 @@
     input.select();
   }
 
-  function onKeyUp(event) {
+  function onKeyDown(event) {
     let idx = Number(event.target.getAttribute("item"));
-    if (isInput(event)) {
+    let { cn, rn } = getInfo(idx);
+    let mirrorRn = $y - rn - 1;
+    let mirrorCn = $x - cn - 1;
+    let mirrorIdx = p.idx(mirrorRn,mirrorCn);
+    if (isInput(event)) {      
+      if (event.code=='Period') {
+        console.log('Special case period!')        
+        if ($letters[mirrorIdx]=='?') {
+          $letters[mirrorIdx] = '.';
+          console.log('Set ',mirrorIdx,'to .')
+        }
+      } else {
+        if ($letters[mirrorIdx]=='.') {
+          $letters[mirrorIdx] = '?';
+        }
+      }
+      console.log('Set letter!',event);
+      $letters[idx] = event.key
       if (mode == ROW) {
         moveRight(idx);
       } else {
         // COL MODE
         moveDown(idx);
       }
+      event.preventDefault();
     } else if (event.code == "ArrowLeft" || event.code == "ArrowRight") {
       if (mode != ROW) {
         let { cn, rn } = getInfo(idx);
         mode = ROW;
         activeRow = rn;
         event.target.select();
+        updateActiveWord(idx);
       } else {
         moveRight(idx, (event.code == "ArrowRight" && 1) || -1);
       }
@@ -129,9 +165,50 @@
         mode = COL;
         activeCol = cn;
         event.target.select();
+        updateActiveWord(idx);
       } else {
         moveDown(idx, (event.code == "ArrowDown" && 1) || -1);
       }
+    } else if (event.code == 'Backspace') {   
+      $letters[idx] = '?'   
+      if ($letters[mirrorIdx]=='.') {
+        $letters[mirrorIdx] = '?';
+      }
+      if (mode==COL) {
+        moveDown(idx,-1);
+      } else {
+        moveRight(idx,-1);
+      }
+    } else if (event.code == 'Tab') {
+      console.log("Tab!",event);
+      if (activeWord) {
+        let nextWordIndex;
+        if (event.shiftKey) {
+          nextWordIndex = activeWord.index - 1;
+        } else { 
+          nextWordIndex = activeWord.index + 1;
+        }
+        let wordList = $downs;
+        if (activeWord.type=='across') {
+          wordList = $acrosses 
+        } 
+        if (wordList.length <= nextWordIndex) {
+          nextWordIndex = 0;
+        } else if (nextWordIndex < 0) {
+          nextWordIndex = wordList.length - 1;
+        }
+        let nextWord = wordList[nextWordIndex];
+        if (mode==ROW) {
+          moveRight(nextWord.indices[0],0);
+        } else {
+          moveDown(nextWord.indices[0],0);
+        }
+        event.preventDefault();
+      } else {
+        console.log('no word, weird')
+      }
+    } else {
+      console.log('Unhandled code',event.code)
     }
   }
 
@@ -145,141 +222,59 @@
   let indices = {};
 
   function convertDownToAcross(idx) {
-    let cn = Math.floor(idx / y);
-    let rn = idx % y;
-    return rn * x + cn;
+    let cn = Math.floor(idx / $y);
+    let rn = idx % $y;
+    return rn * $x + cn;
   }
 
-  function updateIndices(wordIndices) {
-    indices = {};
-    for (let value of Object.values(wordIndices.across)) {
-      indices[value.characterIndex] = { across: value };
-    }
-    for (let value of Object.values(wordIndices.down)) {
-      let idx = convertDownToAcross(value.characterIndex);
-      if (!indices[idx]) {
-        indices[idx] = {};
-      }
-      indices[idx].down = value;
-    }
-    let keys = Object.keys(indices);
-    keys.sort((a, b) => Number(a) - Number(b));
-    let count = 1;
-    for (let key of keys) {
-      indices[key].number = count;
-      if (indices[key].across) indices[key].across.number = count;
-      if (indices[key].down) indices[key].down.number = count;
-      count += 1;
-    }
-  }
-
-  let matchInfoByIndex = [];
-
-  async function updateMatches(metadata: {
-    characterIndex: number;
-    type: "across" | "down";
-    matches: string[];
-  }) {
-    await tick();
-    console.log("Grid.updateMatches", metadata);
-    let idx = metadata.characterIndex;
-    if (metadata.type == "down") {
-      idx = convertDownToAcross(metadata.characterIndex);
-    }
-    if (!matchInfoByIndex[idx]) {
-      matchInfoByIndex[idx] = {
-        across: {},
-        down: {},
-      };
-    }
-    matchInfoByIndex[idx][metadata.type] = metadata;
-  }
-
-  let possibleLettersByIndex = [];
-  $: updatePossibleLeters(matchInfoByIndex);
-
-  function updatePossibleLeters(matchInfoByIndex) {
-    for (let idx = 0; idx < matchInfoByIndex.length; idx++) {
-      //console.log("look at", idx, matchInfoByIndex[idx]);
-      let wordMatches = matchInfoByIndex[idx];
-      if (wordMatches) {
-        if (wordMatches.across && wordMatches.across.matches) {
-          //console.log("Add word across", wordMatches.across);
-          if (!wordMatches.across.matches.map) {
-            console.log("WTF IS UP WITH", wordMatches);
-          }
-          for (
-            let letter = 0;
-            letter < wordMatches.across.word.length;
-            letter++
-          ) {
-            if (!possibleLettersByIndex[letter + idx]) {
-              possibleLettersByIndex[letter + idx] = {};
-            }
-            possibleLettersByIndex[letter + idx].across = Array.from(
-              new Set(wordMatches.across.matches.map((s) => s[letter]))
-            );
-          }
-        }
-        if (wordMatches.down && wordMatches.down.matches) {
-          //console.log("Add match down", wordMatches.down);
-          for (
-            let letter = 0;
-            letter < wordMatches.down.word.length;
-            letter++
-          ) {
-            let letterIndex = idx + letter * x;
-            if (!possibleLettersByIndex[letterIndex]) {
-              possibleLettersByIndex[letterIndex] = {};
-            }
-            possibleLettersByIndex[letterIndex].down = new Set(
-              wordMatches.down.matches.map((s) => s[letter])
-            );
-          }
-        }
-      }
-    }
-  }
-
-  const intersection = (a, b) => new Set([...a].filter((x) => b.has(x)));
-  $: console.log(possibleLettersByIndex);
 </script>
 
 <div class="sbs">
-  {#each [{ x, y }] as newGrid}
-    <section class={`size-${size}`}>
-      {#each range(y) as rn (rn)}
+  {#each [{ $x , $y }] as newGrid}
+    <section class={`size-${size}`}>      
+      <nav>
+        {#if !playMode}
+        <button on:click={() => ($letters = $letters.map(() => "?"))}>Clear</button>
+        <button on:click={p.updateMatches}>Update</button>
+        <Saver/>
+        {/if}
+        <DownloadButton
+          content={createPuzzleFile($letters,$x,$y,$clues)}
+          filename={`${new Date().toLocaleDateString().replace(/\//g,'-')}.txt`}
+        >Download Acrosslite</DownloadButton>        
+      </nav>     
+      {#each range($y) as rn (rn)}
         <div class="row">
-          {#each range(x) as cn (cn)}
+          {#each range($x) as cn (cn)}
             <div class="inputwrapper">
-              {#if indices[rn * x + cn]}
-                <span class="number">
-                  {indices[rn * x + cn].number}.
-                </span>
-              {/if}
+              <!-- Fix me -->
+              <span class="number">
+                {$numbers[p.idx(rn,cn)]||''}
+              </span>
               {#if playMode}
                 <input
-                  class:solid={letters[rn * x + cn] == "."}
-                  class:active={rn == activeRow || cn == activeCol}
+                  class:solid={$letters[p.idx(rn,cn)] == "."}
+                  class:active={activeWord?.indices?.indexOf(p.idx(rn,cn))>-1}
                   on:focus={onFocus}
-                  on:keyup={onKeyUp}
-                  item={rn * x + cn}
+                  on:keydown={onKeyDown}
+                  item={p.idx(rn,cn)}
                 />
               {:else}
                 <input
-                  class:solid={letters[rn * x + cn] == "."}
-                  class:active={rn == activeRow || cn == activeCol}
+                  class:solid={$letters[p.idx(rn,cn)] == "."}
+                  class:active={activeWord?.indices?.indexOf(p.idx(rn,cn))>-1}
                   on:focus={onFocus}
-                  on:keyup={onKeyUp}
-                  item={rn * x + cn}
-                  bind:value={letters[rn * x + cn]}
+                  on:keydown={onKeyDown}
+                  item={p.idx(rn,cn)}
+                  bind:value={$letters[p.idx(rn,cn)]}
                 />
-                {#if letters[rn * x + cn] == "?" && possibleLettersByIndex[rn * x + cn]?.across}
-                  <span class="possible">
-                    {#each possibleLettersByIndex[rn * x + cn].across as acrossLetter}
-                      {#if possibleLettersByIndex[rn * x + cn].down?.has(acrossLetter)}
-                        {acrossLetter}
-                      {/if}
+                {#if $letters[p.idx(rn,cn)] == "?" && $possibleLetters[p.idx(rn,cn)]?.across}
+                  <span class="possible">                    
+                    {#each [...$possibleLetters[p.idx(rn,cn)].across].filter((l)=>$possibleLetters[p.idx(rn,cn)].down?.has(l)) as letter}
+                        {letter}
+                    {:else}
+                      <span class="warning">No match                      
+                      </span>
                     {/each}
                   </span>
                 {/if}
@@ -287,22 +282,30 @@
             </div>
           {/each}
         </div>
-      {/each}
-      <button on:click={() => (letters = letters.map(() => "?"))}>Clear</button>
+      {/each}      
     </section>
   {/each}
   <section class="words">
     <WordLists
       {playMode}
-      {letters}
-      width={x}
-      getMatches={updateMatches}
-      getWordIndices={updateIndices}
     />
   </section>
 </div>
 
 <style>
+
+  nav {
+    display: flex;
+    flex-direction: row;
+    margin: auto;
+    font-size: 1rem;
+  }
+
+  nav > :global(*) {
+    margin-right: 0.5em;
+    margin-left: 0.5em;
+  }
+
   .sbs {
     display: flex;
     flex-direction: row;
@@ -385,5 +388,33 @@
   }
   .size-3 .possible {
     max-width: 3rem;
+  }
+  .warning {
+    color: #822;
+    font-weight: bold;
+  }
+
+  @media print {
+    nav {
+      display: none;
+    }
+    .size-1 {
+      font-size: 32pt;
+    }
+    .size-2 {
+      font-size: 14pt;
+    }
+    .size-3 {
+      font-size: 11pt;
+    }
+    .words {
+      font-size: 9pt;
+    }
+    input.active {
+      background-color: initial;
+    }
+    input:focused {
+      background-color: initial;
+    }
   }
 </style>

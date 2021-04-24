@@ -1,51 +1,19 @@
 <script type="ts">
-  export let indices = {};
+  import type { Word } from "./puzzleStore";
   export let playMode;
-  import Word from "./Word.svelte";
-  export let words: string[] = [];
-  let matches = {};
-  export let onMatch = (matches) => {
-    console.log("Cool matches:", matches);
-  };
+  import WordDisplay from "./Word.svelte";
+  import { getContext } from "svelte";
+  let { numbers } = getContext("puzzleContext");
+  export let words: Word[] = [];
 
-  function onWordMatch(word, metadata, matches) {
-    //matches[word] = matches;
-    if (typeof onMatch == "function") {
-      onMatch(word, metadata, matches);
-    } else {
-      console.log("What is going on with ", onMatch, typeof onMatch);
-    }
+  let sortedWords = [...words];
+  $: {
+    sortedWords = [...words];
+    sortedWords.sort((a, b) => $numbers[a.indices[0]] - $numbers[b.indices[0]]);
   }
-  let byIndex = [];
-
-  function reIndex(ww, ii) {
-    byIndex = [];
-    for (let n = 0; n < words.length; n++) {
-      let idx = Number(indices[n]?.number);
-      let word = words[n];
-      byIndex[idx] = { word, number: indices[n]?.number, metadata: indices[n] };
-    }
-  }
-  $: reIndex(words, indices);
 </script>
 
-{#each byIndex as indexedWord}
-  {#if indexedWord}
-    <br />{indexedWord.number}.
-    <Word
-      {playMode}
-      word={indexedWord.word}
-      onMatch={(matches) =>
-        onWordMatch(indexedWord.word, indexedWord.metadata, matches)}
-    />
-  {/if}
+{#each words as word}
+  <br />{$numbers[word.indices[0]]}.
+  <WordDisplay {playMode} {word} />
 {/each}
-<!-- 
-{#each words as word, n (n)}
-  <br />{indices[n].number}. <Word
-    {playMode}
-    {word}
-    onMatch={(matches) => onWordMatch(word, indices[n], matches)}
-  />
-{/each}
- -->
