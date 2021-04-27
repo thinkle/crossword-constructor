@@ -7,7 +7,7 @@ export function createPuzzleFile(
   letters: string[],
   x: number,
   y: number,
-  clues: {across:string[],down:string[]},  
+  clues: { across: string[]; down: string[] },
   title: string | null,
   author: string | null
 ) {
@@ -28,7 +28,7 @@ export function createPuzzleFile(
 <AUTHOR>
   Created by ${author || "Tom"}
 <COPYRIGHT>
-  ${author||"Tom"} ${new Date().getFullYear()}
+  ${author || "Tom"} ${new Date().getFullYear()}
 <SIZE>
   ${x}x${y}
 <GRID>
@@ -36,4 +36,5 @@ ${grid}<ACROSS>
 ${clues.across.map((i) => (i || "No clue").replace(/\n/g, " ")).join("\n\t")}  
 <DOWN>
 ${clues.down.map((i) => (i || "No clue").replace(/\n/g, " ")).join("\n\t")}  
-`
+`;
+}
