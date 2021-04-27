@@ -9,7 +9,7 @@
   let isWord = false;
   let forceShow = false;
   let lastWord;
-  let { matches, clues } = getContext("puzzleContext");
+  let { matches, clues, currentCell } = getContext("puzzleContext");
   let wordMatches = [];
   $: wordMatches = $matches[word.word];
   $: if (word.word != lastWord) {
@@ -33,45 +33,82 @@
   }
 </script>
 
-{#if playMode}
-  <b>{$clues[word.type][word.index]}</b>
-{:else}
-  <span class:complete={!needsMatch} class:exists={!!isWord}>
-    {word.word}
-    {#if !needsMatch}
-      {#if isWord}
-        <span class={`score score-${Math.round(scores[word.word] / 10)}`}
-          >{scores[word.word]}</span
-        >
-      {:else}
-        <span class="score score-0">Not on list</span>
-      {/if}
-    {/if}
-  </span>
-  {#if needsMatch}
-    <a href="#" on:click={() => (forceShow = !forceShow)}
-      >{wordMatches?.length} matches</a
-    >
-    {#if wordMatches?.length < 5 || forceShow}
-      <ul>
-        {#each wordMatches || [] as match}
-          <li>
-            {match}
-            <span class={`score score-${Math.round(scores[match] / 10)}`}
-              >{scores[match]}</span
-            >
-          </li>
-        {:else}
-          No matches
-        {/each}
-      </ul>
-    {/if}
+<span
+  class:neighborhood={word.indices.indexOf($currentCell?.index) > -1}
+  class:current={word.indices.indexOf($currentCell?.index) > -1 &&
+    word.type == $currentCell.direction}
+>
+  {#if playMode}
+    <b>{$clues[word.type][word.index]}</b>
   {:else}
-    Clue: <input type="text" bind:value={$clues[word.type][word.index]} />
+    <span class:complete={!needsMatch} class:exists={!!isWord}>
+      <button
+        on:click={() =>
+          ($currentCell = { index: word.indices[0], direction: word.type })}
+        >{word.word}</button
+      >
+      {#if !needsMatch}
+        {#if isWord}
+          <span class={`score score-${Math.round(scores[word.word] / 10)}`}
+            >{scores[word.word]}</span
+          >
+        {:else}
+          <span class="score score-0">Not on list</span>
+        {/if}
+      {/if}
+    </span>
+    {#if needsMatch}
+      <button on:click={() => (forceShow = !forceShow)}
+        >{wordMatches?.length} matches</button
+      >
+      {#if wordMatches?.length < 5 || forceShow}
+        <ul>
+          {#each wordMatches || [] as match}
+            <li>
+              {match}
+              <span class={`score score-${Math.round(scores[match] / 10)}`}
+                >{scores[match]}</span
+              >
+            </li>
+          {:else}
+            No matches
+          {/each}
+        </ul>
+      {/if}
+    {:else}
+      <p
+        contenteditable="true"
+        type="text"
+        bind:textContent={$clues[word.type][word.index]}
+      />
+    {/if}
   {/if}
-{/if}
+</span>
 
 <style>
+  .neighborhood {
+    background-color: #ffc;
+  }
+  .current {
+    background-color: #ff3;
+  }
+  p {
+    border: 1px solid #ccc;
+    min-width: 170px;
+    min-height: 1em;
+    padding: 15px;
+    margin-left: 2em;
+    margin-top: 0;
+  }
+  button {
+    border: none;
+    background: inherit;
+  }
+
+  button:hover {
+    text-decoration: underline;
+  }
+
   .complete {
     font-style: italic;
     color: #a77;

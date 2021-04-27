@@ -1,11 +1,14 @@
 <script type="ts">
   import { getContext } from "svelte";
-
+  export let title = "";
+  export let author = "";
   let { letters, x, y, clues } = getContext("puzzleContext");
 
   type puzzle = {
     x: number;
     y: number;
+    title: string;
+    author: string;
     letters: string[];
     clues: {
       across: string[];
@@ -34,7 +37,14 @@
 
   function save() {
     let savedPuzzles = getSaved();
-    savedPuzzles.push({ x: $x, y: $y, letters: $letters, clues: $clues });
+    savedPuzzles.push({
+      x: $x,
+      y: $y,
+      letters: $letters,
+      clues: $clues,
+      title,
+      author,
+    });
     localStorage.setItem("saved-crosswords", JSON.stringify(savedPuzzles));
   }
 
@@ -55,6 +65,12 @@
     if (puzzle.clues) {
       $clues = puzzle.clues;
     }
+    if (puzzle.title) {
+      title = puzzle.title;
+    }
+    if (puzzle.author) {
+      author = puzzle.author;
+    }
     puzzleOptions = [];
   }
 
@@ -71,6 +87,7 @@
       <h2>Choose a puzzle!</h2>
       {#each puzzleOptions as puzzle, n}
         <div class="choice">
+          <h3>{puzzle.title || "Untitled"}</h3>
           <div class="thumb">
             <div class="row">
               {#each puzzle.letters as l, n}

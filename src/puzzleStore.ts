@@ -8,12 +8,7 @@ export interface Word {
   type: "across" | "down";
   index: number;
 }
-
-export function makePuzzleStore(
-  initialLetters: string[],
-  initialX: number,
-  initialY: number
-): {
+export interface PuzzleContext {
   letters: Writable<string[]>;
   clues: Writable<{ across: string[]; down: string[] }>;
   x: Writable<number>;
@@ -21,7 +16,18 @@ export function makePuzzleStore(
   acrosses: Readable<Word[]>;
   downs: Readable<Word[]>;
   possibleLetters: Readable<{}>;
-} {
+  numbers: Readable<{}>;
+  matches: Writable<{}>;
+  updateMatches(): void;
+  idx(rn: number, cn: number): number;
+  currentCell: Writable<{ index: number; direction: "across" | "down" } | null>;
+}
+
+export function makePuzzleStore(
+  initialLetters: string[],
+  initialX: number,
+  initialY: number
+): PuzzleContext {
   let _letters = writable(initialLetters.map(oneCap));
   let letters = {
     subscribe: _letters.subscribe,
@@ -71,7 +77,6 @@ export function makePuzzleStore(
   });
 
   let downs = derived([letters, x, y], ([$letters, $x, $y]) => {
-    console.log("Recompute downs");
     let words: Word[] = [];
     for (let cn = 0; cn < $x; cn++) {
       let currentWord: Word = {
@@ -143,22 +148,18 @@ export function makePuzzleStore(
   );
 
   function updateMatches() {
-    console.log("Update matches!");
     let $acrosses = get(acrosses);
     let $downs = get(downs);
     matches.update(($matches) => {
       [$acrosses, $downs].forEach((wordList) => {
         wordList.forEach((word) => {
           if (!$matches[word.word]) {
-            console.log("Compute match for ", word.word);
             $matches[word.word] = findMatches(word.word);
           }
         });
       });
-      console.log("Done updating matches!", $matches);
       return $matches;
     });
-    console.log("updateMatches is done!");
   }
 
   let autoUpdate = true;
@@ -168,15 +169,11 @@ export function makePuzzleStore(
       setTimeout(() => {
         if (!updating) {
           updating = true;
-          console.log("Auto update those matches!");
           try {
             updateMatches();
-          } catch (err) {
-            console.log("Error updating?", err);
-          }
+          } catch (err) {}
           updating = false;
         } else {
-          console.log("No need to update, already updating...");
         }
       }, 500);
     }
@@ -208,10 +205,22 @@ export function makePuzzleStore(
   downs.subscribe(fillBlankClues);
   function fillBlankClues($words: Word[]) {
     clues.update(($clues) => {
+      let lastWord: Word | null;
       for (let word of $words) {
         if ($clues[word.type][word.index] === undefined) {
           $clues[word.type][word.index] = "";
         }
+        lastWord = word;
+      }
+      if ($clues[lastWord.type].length > lastWord.index + 1) {
+        console.log(
+          "CLUES Slicing off end of array",
+          lastWord.type,
+          $clues[lastWord.type]
+        );
+        console.log("CLUES Had", [...$clues[lastWord.type]]);
+        $clues[lastWord.type] = $clues[lastWord.type].slice(0, lastWord.index);
+        console.log("CLUES Now we have:", $clues[lastWord.type]);
       }
       return $clues;
     });
@@ -229,6 +238,7 @@ export function makePuzzleStore(
     possibleLetters,
     matches,
     updateMatches,
+    currentCell: writable(null),
   };
   // I was halfway to implementing some row magic but let's put that off for now...
   /* let oldX = x;

@@ -14,6 +14,6 @@
 </script>
 
 {#each words as word}
-  <br />{$numbers[word.indices[0]]}.
+  <br />{$numbers[word.indices[0]]}{(word.type == "across" && "A") || "D"}.
   <WordDisplay {playMode} {word} />
 {/each}
