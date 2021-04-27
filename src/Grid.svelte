@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick, setContext, getContext } from "svelte";
+  import { writable } from 'svelte/store'
   import { makePuzzleStore } from "./puzzleStore";
   import type {Word} from './puzzleStore'
   import WordLists from "./WordLists.svelte";
@@ -10,20 +11,21 @@
   export let xsize: number;
   export let ysize: number;
   export let initialLetters = [];
+
+  let fullWidth = 0;  
+  let gridMax = 4;
+  $: gridMax = Math.max($x,$y);
   let size = 2;
   let p = makePuzzleStore(initialLetters, xsize, ysize);
   console.log('Made magic',p)
   setContext("puzzleContext", p);
   let {
     x, y, numbers, letters, possibleLetters,
-    clues, acrosses, downs
+    clues, acrosses, downs, currentCell
   } = p;
 
-  console.log('Initial store values',
-    $x,$y,$numbers,$letters,$possibleLetters,$clues
-  )
+  let answers = writable([])
 
-  $: console.log('Possible letters:',$possibleLetters)
   $: $x = xsize;
   $: $y = ysize;
 
@@ -44,26 +46,18 @@
     $letters = $letters;
   }
   
-  let ROW = 1;
+  /* let ROW = 1;
   let COL = 2;
-  let mode: ROW | COL = ROW;
-  let activeCol: number | null = null;
-  let activeRow: number | null = null;
+  let mode: ROW | COL = ROW; */
   let activeWord : Word | null = null;
-  $: if (mode == ROW) {
-    activeCol = null;
-  }
-  $: if (mode == COL) {
-    activeRow = null;
-  }
-
+  
   function isInput(event) {
     console.log('key?',event.key)
     return event.key.length==1 && event.key.match(/[A-Za-z.]/)
   }
 
   function updateActiveWord (idx) {
-    if (mode == ROW) {
+    if ($currentCell.direction == 'across') {
       activeWord = $acrosses.find(
         (word : Word)=>word.indices.indexOf(idx)>-1
       )
@@ -74,11 +68,23 @@
     }
   }
 
+  let locallySetCell = -1;
+  $: if ($currentCell && $currentCell.index != locallySetCell) {
+      moveRight($currentCell.index,0)
+  }
+
   function onFocus(event) {
-    let idx = Number(event.target.getAttribute("item"));
-    let cn = idx % x;
-    let rn = Math.floor(idx / $x);
-    updateActiveWord(idx)
+    let idx = Number(event.target.getAttribute("item"));    
+    if ($currentCell) {
+      $currentCell.index = idx
+    } else {
+      $currentCell = {
+        index : idx,      
+        direction : 'across'
+      }
+    };
+    locallySetCell = idx;
+    updateActiveWord(idx)        
     event.target.select();
   }
 
@@ -102,9 +108,13 @@
     if (next < 0) {
       next = $x * $y - 1;
     }
-    let input = getInput(next);
-    input.focus();
-    input.select();
+    if (lockMode && $letters[next]=='.' && amount) {
+      moveRight(next,amount)
+    } else {
+      let input = getInput(next);
+      input.focus();
+      input.select();
+    }
   }
 
   function moveDown(idx, amount = 1) {
@@ -117,67 +127,87 @@
         next = 0;
       }
     }
-    let input = getInput(next);
-    input.focus();
-    input.select();
+    if (lockMode && $letters[next]=='.' && amount) {
+      moveDown(next,amount)
+    } else {
+      let input = getInput(next);
+      input.focus();
+      input.select();
+    }
+  }
+  
+  function setLetter (idx, val) {
+    if (playMode) {
+      $answers[idx] = val;
+    } else {
+      $letters[idx] = val;
+    }
   }
 
-  function onKeyDown(event) {
+  function onKeyDown(event) {    
     let idx = Number(event.target.getAttribute("item"));
     let { cn, rn } = getInfo(idx);
     let mirrorRn = $y - rn - 1;
     let mirrorCn = $x - cn - 1;
     let mirrorIdx = p.idx(mirrorRn,mirrorCn);
-    if (isInput(event)) {      
-      if (event.code=='Period') {
-        console.log('Special case period!')        
-        if ($letters[mirrorIdx]=='?') {
-          $letters[mirrorIdx] = '.';
-          console.log('Set ',mirrorIdx,'to .')
+    if (isInput(event)) { 
+      if (lockMode && event.code=='Period' || $letters[idx]=='.') {
+        console.log('ignore')
+      } else { 
+        if (!playMode && mirrorMode && !lockMode) {    
+          if (event.code=='Period') {        
+            console.log('Special case period!')        
+            if ($letters[mirrorIdx]=='?') {
+              $letters[mirrorIdx] = '.';
+            }
+          } else {
+            if ($letters[mirrorIdx]=='.') {
+              $letters[mirrorIdx] = '?';
+            }
+          }      
         }
-      } else {
-        if ($letters[mirrorIdx]=='.') {
-          $letters[mirrorIdx] = '?';
+        setLetter(idx,event.key.toUpperCase())
+        if ($currentCell?.direction == 'across') {
+          moveRight(idx);
+        } else {          
+          moveDown(idx);
         }
-      }
-      console.log('Set letter!',event);
-      $letters[idx] = event.key
-      if (mode == ROW) {
-        moveRight(idx);
-      } else {
-        // COL MODE
-        moveDown(idx);
       }
       event.preventDefault();
+    } else if (event.code == 'Backspace') {   
+      if ($letters[idx]=='.' && lockMode) {
+        event.preventDefault()
+      } else {
+        setLetter(idx,'?')
+        if (mirrorMode && !playMode) { 
+          if ($letters[mirrorIdx]=='.') {
+            $letters[mirrorIdx] = '?';
+          }
+        }
+        if ($currentCell.direction=='down') {
+          moveDown(idx,-1);
+        } else {
+          moveRight(idx,-1);
+        }
+        event.preventDefault()
+      }
     } else if (event.code == "ArrowLeft" || event.code == "ArrowRight") {
-      if (mode != ROW) {
+      if ($currentCell.direction != 'across') {
         let { cn, rn } = getInfo(idx);
-        mode = ROW;
-        activeRow = rn;
+        $currentCell.direction = 'across';        
         event.target.select();
         updateActiveWord(idx);
       } else {
         moveRight(idx, (event.code == "ArrowRight" && 1) || -1);
       }
     } else if (event.code == "ArrowDown" || event.code == "ArrowUp") {
-      if (mode != COL) {
+      if ($currentCell.direction != 'down') {
         let { cn, rn } = getInfo(idx);
-        mode = COL;
-        activeCol = cn;
+        $currentCell.direction = 'down';
         event.target.select();
         updateActiveWord(idx);
       } else {
         moveDown(idx, (event.code == "ArrowDown" && 1) || -1);
-      }
-    } else if (event.code == 'Backspace') {   
-      $letters[idx] = '?'   
-      if ($letters[mirrorIdx]=='.') {
-        $letters[mirrorIdx] = '?';
-      }
-      if (mode==COL) {
-        moveDown(idx,-1);
-      } else {
-        moveRight(idx,-1);
       }
     } else if (event.code == 'Tab') {
       console.log("Tab!",event);
@@ -198,7 +228,7 @@
           nextWordIndex = wordList.length - 1;
         }
         let nextWord = wordList[nextWordIndex];
-        if (mode==ROW) {
+        if ($currentCell.direction=='across') {
           moveRight(nextWord.indices[0],0);
         } else {
           moveDown(nextWord.indices[0],0);
@@ -219,30 +249,38 @@
     }
     return a;
   }
-  let indices = {};
 
-  function convertDownToAcross(idx) {
-    let cn = Math.floor(idx / $y);
-    let rn = idx % $y;
-    return rn * $x + cn;
-  }
-
+  let lockMode : boolean = false;
+  let mirrorMode : boolean = true;
+  let title : string = "";
+  let author : string = "";
 </script>
-
-<div class="sbs">
+<nav>
+  {#if !playMode}
+    <button on:click={() => ($letters = $letters.map(() => "?"))}>Clear All</button>
+    <button on:click={() => ($letters = $letters.map((l) => l=="."&&"."||"?"))}>Clear Letters</button>
+    <input type="checkbox" bind:checked={lockMode}> Lock black
+    <input type="checkbox" bind:checked={mirrorMode}>Mirror mode                                              
+    <button on:click={p.updateMatches}>Update</button>
+    <Saver bind:title={title} bind:author={author}/>
+  {/if}
+  <DownloadButton
+    content={createPuzzleFile($letters,$x,$y,$clues,title,author)}
+    filename={`${new Date().toLocaleDateString().replace(/\//g,'-')}.txt`}
+  >Download Acrosslite</DownloadButton>        
+</nav> 
+<div class="titlebar">
+  {#if playMode}
+    <h3>{title||"Untitled"}</h3> by <span class="author">{author}</span>
+  {:else}
+    <input bind:value={title} placeholder="Title" class="title"> by <input placeholder="Author" class="author" bind:value={author}>
+  {/if}
+</div>
+<div class="sbs" bind:clientWidth={fullWidth} 
+  style="--grid-width:{fullWidth}px;--grid-max:{gridMax};--size:{Math.min(fullWidth-300,700)/(gridMax*2)}px">
   {#each [{ $x , $y }] as newGrid}
-    <section class={`size-${size}`}>      
-      <nav>
-        {#if !playMode}
-        <button on:click={() => ($letters = $letters.map(() => "?"))}>Clear</button>
-        <button on:click={p.updateMatches}>Update</button>
-        <Saver/>
-        {/if}
-        <DownloadButton
-          content={createPuzzleFile($letters,$x,$y,$clues)}
-          filename={`${new Date().toLocaleDateString().replace(/\//g,'-')}.txt`}
-        >Download Acrosslite</DownloadButton>        
-      </nav>     
+    <section class={`grid size-${size}`}>      
+          
       {#each range($y) as rn (rn)}
         <div class="row">
           {#each range($x) as cn (cn)}
@@ -253,16 +291,20 @@
               </span>
               {#if playMode}
                 <input
+                  class="square"
                   class:solid={$letters[p.idx(rn,cn)] == "."}
                   class:active={activeWord?.indices?.indexOf(p.idx(rn,cn))>-1}
                   on:focus={onFocus}
                   on:keydown={onKeyDown}
                   item={p.idx(rn,cn)}
+                  bind:value={$answers[p.idx(rn,cn)]}
                 />
               {:else}
                 <input
+                  class="square"
                   class:solid={$letters[p.idx(rn,cn)] == "."}
                   class:active={activeWord?.indices?.indexOf(p.idx(rn,cn))>-1}
+                  class:missing={$letters[p.idx(rn,cn)]=="?"}
                   on:focus={onFocus}
                   on:keydown={onKeyDown}
                   item={p.idx(rn,cn)}
@@ -293,12 +335,29 @@
 </div>
 
 <style>
-
+  .grid {
+    font-size: var(--size);
+  }
+  /* .size-1 {
+    font-size: 16pt;
+    --size : 16pt;
+  }
+  .size-2 {
+    font-size: 30pt;
+    --size : 30pt;
+  }
+  .size-3 {
+    font-size: 40pt;
+    --size: 40pt;
+  }
+ */
   nav {
     display: flex;
     flex-direction: row;
-    margin: auto;
+    margin-left: auto;
+    margin-right: auto;
     font-size: 1rem;
+    align-items: center;
   }
 
   nav > :global(*) {
@@ -334,7 +393,7 @@
     flex-direction: row;
     justify-content: center;
   }
-  input {
+  input.square {
     width: 2em;
     height: 2em;
     margin: 0;
@@ -342,25 +401,20 @@
 
   input.active {
     background-color: #ffffaa;
-  }
-
-  input:focused {
+  }  
+  input.active:focused {
     background-color: #ffff00;
     font-weight: bold;
   }
+  input.missing {
+    color: #ddd;
+  }
+
+
   input.solid {
     background-color: black;
   }
 
-  .size-1 {
-    font-size: 1rem;
-  }
-  .size-2 {
-    font-size: 2rem;
-  }
-  .size-3 {
-    font-size: 3rem;
-  }
 
   .inputwrapper {
     position: relative;
@@ -371,27 +425,32 @@
     pointer-events: none;
     top: 2px;
     left: 2px;
-    font-size: small;
+    font-size: calc(var(--size)/2);
   }
+
 
   .possible {
     position: absolute;
     right: 2px;
     top: 2px;
-    font-size: xx-small;
-    color: grey;
+    font-size: calc(var(--size)/3);
+    color: #8af;
     word-break: break-all;
-    max-width: 1rem;
+    max-width: calc(1.3 * var(--size));
+    max-height: calc(2 * var(--size));
+    overflow-y: scroll;
+    pointer-events: none;
   }
-  .size-2 .possible {
-    max-width: 2rem;
-  }
-  .size-3 .possible {
-    max-width: 3rem;
-  }
+
   .warning {
     color: #822;
     font-weight: bold;
+  }
+  .titlebar {
+    text-align: center;
+  }
+  .author {
+    font-style: italic;
   }
 
   @media print {
@@ -399,13 +458,16 @@
       display: none;
     }
     .size-1 {
-      font-size: 32pt;
+      font-size: 36pt;
     }
     .size-2 {
       font-size: 14pt;
     }
     .size-3 {
       font-size: 11pt;
+    }
+    .possible {
+      display: none;
     }
     .words {
       font-size: 9pt;
