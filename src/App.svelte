@@ -1,17 +1,18 @@
 <script lang="ts">
   import Grid from "./Grid.svelte";
+  import LetterCounter from './LetterCounter.svelte';
   let playMode;
   let x: number = 4;
   let y: number = 4;
   let letters = [];
-
 </script>
 
 <main>
   <h1 class="center">Tom's Puzzle Tool</h1>
   <div class="center">
     <input bind:value={x} type="number" min="1" max="20" />
-    x<input bind:value={y} type="number" min="1" max="20" />
+    x
+    <input bind:value={y} type="number" min="1" max="20" />
   </div>
   <nav>
     <button class="center" on:click={() => (playMode = !playMode)}>
@@ -20,11 +21,14 @@
       {:else}
         Play
       {/if}
-    </button>  
-    
+    </button>      
   </nav>
-  
-    <Grid xsize={x} ysize={y} {playMode} bind:initialLetters={letters} />
+  <Grid xsize= {x} ysize={y} {playMode} bind:initialLetters={letters} />
+  {#if !playMode}
+    <hr>
+    <h3>Letter Counter</h3>
+    <LetterCounter/>
+  {/if}
 </main>
 
 <style>
