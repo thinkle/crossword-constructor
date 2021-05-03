@@ -2,6 +2,7 @@
   import { tick, setContext, getContext } from "svelte";
   import { writable } from 'svelte/store'
   import { makePuzzleStore } from "./puzzleStore";
+  import { solvePuzzle } from './solver';
   import type {Word} from './puzzleStore'
   import WordLists from "./WordLists.svelte";
   import DownloadButton from './DownloadButton.svelte';
@@ -11,7 +12,7 @@
   export let xsize: number;
   export let ysize: number;
   export let initialLetters = [];
-
+  let widthDelta = 200;
   let fullWidth = 0;  
   let gridMax = 4;
   $: gridMax = Math.max($x,$y);
@@ -262,6 +263,9 @@
     <input type="checkbox" bind:checked={lockMode}> Lock black
     <input type="checkbox" bind:checked={mirrorMode}>Mirror mode                                              
     <button on:click={p.updateMatches}>Update</button>
+    <button on:click={()=>solvePuzzle(p)}>Solve</button>
+    <button on:click={()=>{widthDelta+=10}}>+</button>
+    <button on:click={()=>{widthDelta-=10}}>-</button>
     <Saver bind:title={title} bind:author={author}/>
   {/if}
   <DownloadButton
@@ -277,7 +281,7 @@
   {/if}
 </div>
 <div class="sbs" bind:clientWidth={fullWidth} 
-  style="--grid-width:{fullWidth}px;--grid-max:{gridMax};--size:{Math.min(fullWidth-300,700)/(gridMax*2)}px">
+  style="--grid-width:{fullWidth}px;--grid-max:{gridMax};--size:{Math.min(fullWidth-widthDelta,widthDelta*2.5)/(gridMax*2)}px">
   {#each [{ $x , $y }] as newGrid}
     <section class={`grid size-${size}`}>      
           

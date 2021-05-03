@@ -22,7 +22,6 @@
       currentWords.forEach(
         (w) => (currentIndices = [...currentIndices, ...w.indices])
       );
-      console.log("Looking in neighborhood of", currentIndices);
       neighborhoodWords = words.filter((w) => {
         if (currentWords.indexOf(w) > -1) {
           return false;
@@ -36,7 +35,7 @@
     }
   }
   $: getNeighborhood($currentCell);
-  let showCurrent;
+  let showCurrent = true;
 </script>
 
 {#if currentWords.length && showCurrent}
@@ -46,7 +45,7 @@
     <h3>Neighborhood</h3>
     <Words {playMode} words={neighborhoodWords} />
   </div>
-{:else}
+{:else if !showCurrent}
   <button on:click={() => (showCurrent = true)}>Show nearby</button>
 {/if}
 <div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Grid from "./Grid.svelte";
   import LetterCounter from './LetterCounter.svelte';
+  import CustomWordList from './CustomWordList.svelte';
   let playMode;
   let x: number = 4;
   let y: number = 4;
@@ -28,6 +29,7 @@
     <hr>
     <h3>Letter Counter</h3>
     <LetterCounter/>
+    <CustomWordList/>
   {/if}
 </main>
 

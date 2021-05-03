@@ -2,6 +2,7 @@ import { writable, get, derived } from "svelte/store";
 import type { Writable, Readable } from "svelte/store";
 import { tick } from "svelte";
 import { findMatches } from "./findMatches";
+import { getPossible } from "./solver";
 export interface Word {
   word: string;
   indices: number[];
@@ -19,6 +20,7 @@ export interface PuzzleContext {
   numbers: Readable<{}>;
   matches: Writable<{}>;
   updateMatches(): void;
+  wordMatches: Readable<{}>;
   idx(rn: number, cn: number): number;
   currentCell: Writable<{ index: number; direction: "across" | "down" } | null>;
 }
@@ -110,11 +112,11 @@ export function makePuzzleStore(
   });
 
   let matches = writable({});
+  let wordMatches = writable({ across: [], down: [] });
 
   let possibleLetters = derived(
-    [acrosses, downs, matches],
-    ([$acrosses, $downs, $matches]) => {
-      console.log("Compute possible letters", new Date().getTime());
+    [acrosses, downs, matches, wordMatches],
+    ([$acrosses, $downs, $matches, $wordMatches]) => {
       let lettersByIndex = {};
       for (let wordList of [$acrosses, $downs]) {
         for (let word of wordList) {
@@ -127,8 +129,22 @@ export function makePuzzleStore(
               };
             }
           }
-          if ($matches[word.word]) {
-            $matches[word.word].forEach((match) => {
+          let theMatches = $wordMatches[word.type][word.index];
+          if (!theMatches) {
+            theMatches = $matches[word.word];
+          }
+          /* if (!(theMatches && theMatches.length && theMatches[0].length == word.word.length)) {
+            theMatches = $matches[word.word];
+          } else if (theMatches && theMatches[0].length != word.word.length) {
+            console.log(
+              "Oops - theMatches looks to be wrong",
+              $wordMatches,
+              word
+            );
+            theMatches = $wordMatches[word.word];
+          } */
+          if (theMatches) {
+            theMatches.forEach((match) => {
               for (
                 let letterIndex = 0;
                 letterIndex < match.length;
@@ -142,7 +158,6 @@ export function makePuzzleStore(
           }
         }
       }
-      console.log("Done computing letters", new Date().getTime());
       return lettersByIndex;
     }
   );
@@ -150,6 +165,7 @@ export function makePuzzleStore(
   function updateMatches() {
     let $acrosses = get(acrosses);
     let $downs = get(downs);
+    wordMatches.set({ across: [], down: [] });
     matches.update(($matches) => {
       [$acrosses, $downs].forEach((wordList) => {
         wordList.forEach((word) => {
@@ -160,11 +176,35 @@ export function makePuzzleStore(
       });
       return $matches;
     });
+    // Second step...
+    setTimeout(() => {
+      let $matches = get(matches);
+      let $possibleLetters = get(possibleLetters);
+      let $wordMatches = {
+        across: [],
+        down: [],
+      };
+      ["across", "down"].forEach((t, i, a) => {
+        let arr;
+        if (t == "across") {
+          arr = $acrosses;
+        } else {
+          arr = $downs;
+        }
+        arr.forEach((word) => {
+          $wordMatches[t].push(
+            filterMatches(word, $possibleLetters, $matches[word.word])
+          );
+        });
+      });
+      wordMatches.set($wordMatches);
+    }, 100);
   }
 
   let autoUpdate = true;
   let updating = false;
   letters.subscribe(($letters) => {
+    wordMatches.set({ across: [], down: [] });
     if (!updating && autoUpdate) {
       setTimeout(() => {
         if (!updating) {
@@ -226,6 +266,40 @@ export function makePuzzleStore(
     });
   }
 
+  function filterMatches(word, $possibleLetters, possibleWords) {
+    let matcher = new RegExp(
+      "^" +
+        word.indices
+          .map(
+            (i, wi) =>
+              (word.word[wi] == "?" &&
+                "[" + getPossible($possibleLetters[i]).join("") + "]") ||
+              word.word[wi]
+          )
+          .join("") +
+        "$",
+      "i"
+    );
+    let result = possibleWords.filter((w) => w.match(matcher));
+    if (false && word.index == 0) {
+      console.log(
+        "Filter match",
+        word.index,
+        word.type,
+        " returns",
+        result.length,
+        {
+          word,
+          matcher,
+          result,
+          possibleWords,
+          $possibleLetters,
+        }
+      );
+    }
+    return result;
+  }
+
   return {
     letters,
     numbers,
@@ -238,6 +312,7 @@ export function makePuzzleStore(
     possibleLetters,
     matches,
     updateMatches,
+    wordMatches,
     currentCell: writable(null),
   };
   // I was halfway to implementing some row magic but let's put that off for now...
