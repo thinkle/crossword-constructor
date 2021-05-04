@@ -1,4 +1,5 @@
 <script type="ts">
+  import { getPossible } from "./solver";
   import type { Word } from "./puzzleStore";
   import { tick, onDestroy, getContext } from "svelte";
   export let playMode;
@@ -9,9 +10,19 @@
   let isWord = false;
   let forceShow = false;
   let lastWord;
-  let { matches, clues, currentCell } = getContext("puzzleContext");
-  let wordMatches = [];
-  $: wordMatches = $matches[word.word];
+  let {
+    matches,
+    clues,
+    currentCell,
+    possibleLetters,
+    wordMatches,
+  } = getContext("puzzleContext");
+  let myMatches = [];
+
+  $: myMatches = $matches[word.word];
+  $: if ($wordMatches[word.type][word.index]?.length) {
+    myMatches = $wordMatches[word.type][word.index];
+  }
   $: if (word.word != lastWord) {
     forceShow = false;
     lastWord = word.word;
@@ -19,18 +30,17 @@
 
   $: needsMatch = word.word.indexOf("?") > -1;
 
-  $: if (!needsMatch) {
-    updateCompleteWord();
-  }
+  $: isWord = !needsMatch && words.indexOf(word.word) > -1;
 
-  function updateCompleteWord() {
-    let finder = new RegExp("^" + word + "$", "i");
-    if (words.find((w) => w.match(finder))) {
-      isWord = true;
-    } else {
-      isWord = false;
-    }
-  }
+  /* let matcher = new RegExp(".*");
+
+  $: matcher = new RegExp(
+    "^" +
+      word.indices
+        .map((i) => "[" + getPossible($possibleLetters[i]).join("") + "]")
+        .join("") +
+      "$"
+  ); */
 </script>
 
 <span
@@ -59,11 +69,11 @@
     </span>
     {#if needsMatch}
       <button on:click={() => (forceShow = !forceShow)}
-        >{wordMatches?.length} matches</button
+        >{myMatches?.length} matches</button
       >
-      {#if wordMatches?.length < 5 || forceShow}
+      {#if myMatches?.length < 5 || forceShow}
         <ul>
-          {#each wordMatches || [] as match}
+          {#each myMatches || [] as match}
             <li>
               {match}
               <span class={`score score-${Math.round(scores[match] / 10)}`}

@@ -133,16 +133,6 @@ export function makePuzzleStore(
           if (!theMatches) {
             theMatches = $matches[word.word];
           }
-          /* if (!(theMatches && theMatches.length && theMatches[0].length == word.word.length)) {
-            theMatches = $matches[word.word];
-          } else if (theMatches && theMatches[0].length != word.word.length) {
-            console.log(
-              "Oops - theMatches looks to be wrong",
-              $wordMatches,
-              word
-            );
-            theMatches = $wordMatches[word.word];
-          } */
           if (theMatches) {
             theMatches.forEach((match) => {
               for (
@@ -151,8 +141,12 @@ export function makePuzzleStore(
                 letterIndex++
               ) {
                 let gridIndex = word.indices[letterIndex];
-                let letter = match[letterIndex];
-                lettersByIndex[gridIndex][word.type].add(letter);
+                if (isNaN(gridIndex)) {
+                  console.log("Oops", theMatches, "no fit", word);
+                } else {
+                  let letter = match[letterIndex];
+                  lettersByIndex[gridIndex][word.type].add(letter);
+                }
               }
             });
           }
