@@ -14,6 +14,9 @@ export function getPossible(possible: {
   down: Set<string>;
 }) {
   let r = [];
+  if (!possible || !possible.across) {
+    return [];
+  }
   possible.across.forEach((l) => {
     if (possible.down.has(l)) {
       r.push(l);
