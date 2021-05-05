@@ -113,7 +113,6 @@ export function makePuzzleStore(
 
   let matches = writable({});
   let wordMatches = writable({ across: [], down: [] });
-
   let possibleLetters = derived(
     [acrosses, downs, matches, wordMatches],
     ([$acrosses, $downs, $matches, $wordMatches]) => {
@@ -129,9 +128,9 @@ export function makePuzzleStore(
               };
             }
           }
-          let theMatches = $wordMatches[word.type][word.index];
-          if (!theMatches) {
-            theMatches = $matches[word.word];
+          let theMatches = $matches[word.word];
+          if ($wordMatches.across.length) {
+            theMatches = $wordMatches[word.type][word.index];
           }
           if (theMatches) {
             theMatches.forEach((match) => {
