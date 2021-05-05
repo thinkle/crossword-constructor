@@ -24,11 +24,11 @@ export function createPuzzleFile(
   return `
 <ACROSS PUZZLE V2>
 <TITLE>
-  Puzzle Constructed on ${title || new Date().toLocaleDateString()}
+   ${title || `Puzzle Constructed on ${new Date().toLocaleDateString()}`}
 <AUTHOR>
-  Created by ${author || "Tom"}
+  ${author || "Tom Hinkle"}
 <COPYRIGHT>
-  ${author || "Tom"} ${new Date().getFullYear()}
+  ${author || "Tom Hinkle"} ${new Date().getFullYear()}
 <SIZE>
   ${x}x${y}
 <GRID>

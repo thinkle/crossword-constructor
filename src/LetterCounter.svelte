@@ -11,7 +11,18 @@
       return { word, count: word.length };
     });
   }
+
+  function sort() {
+    let lines = text.split("\n");
+    lines.sort(
+      (a, b) =>
+        b.replace(/[^A-Za-z]/g, "").length - a.replace(/[^A-Za-z]/g, "").length
+    );
+    text = lines.join("\n");
+  }
 </script>
+
+<button on:click={sort}>Sort Words</button>
 
 <div>
   <textarea
