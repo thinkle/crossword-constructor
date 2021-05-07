@@ -2,6 +2,7 @@
   import { tick, setContext, getContext } from "svelte";
   import { writable } from 'svelte/store'
   import { makePuzzleStore } from "./puzzleStore";
+  import type {PuzzleContext} from './puzzleStore';
   import { solvePuzzle } from './solver';
   import type {Word} from './puzzleStore'
   import WordLists from "./WordLists.svelte";
@@ -17,7 +18,7 @@
   let gridMax = 4;
   $: gridMax = Math.max($x,$y);
   let size = 2;
-  let p = makePuzzleStore(initialLetters, xsize, ysize);
+  let p : PuzzleContext = makePuzzleStore(initialLetters, xsize, ysize);
   console.log('Made magic',p)
   setContext("puzzleContext", p);
   let {
@@ -113,28 +114,113 @@
       moveRight(next,amount)
     } else {
       let input = getInput(next);
-      input.focus();
-      input.select();
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+  }
+
+  function getNextDownSquareByWord (idx, amount, word) {
+    console.log('get next by word',word)
+    let { rn, cn } = getInfo(idx);
+    let rawNext = (rn + amount) * $x + cn;    
+    if (word.indices.indexOf(rawNext) > -1) {
+      return rawNext
+    } else {
+      /* Ok we are switching words... */
+      let currentWordNumber = $numbers[word.indices[0]];
+      console.log('cw# = ',currentWordNumber)
+      let nextWord;
+      let firstWord;
+      for (let w of $downs) {        
+        let wordNumber = $numbers[w.indices[0]];
+        console.log('Compare to ',wordNumber)
+        if (amount > 0) {
+          if (firstWord===undefined || $numbers[w.indices[0]] < $numbers[firstWord.indices[0]]) {
+            firstWord = w;
+          } 
+          // next
+          if (wordNumber > currentWordNumber) {
+            if (!nextWord) {
+              nextWord= w
+              console.log('Sure');
+            } else {
+              if ($numbers[w.indices[0]] < $numbers[nextWord.indices[0]]) {
+                nextWord= w;
+                console.log('Sure')
+              }
+            }
+          }
+        } else { // moving up...
+          if (firstWord===undefined || $numbers[w.indices[0]] > $numbers[firstWord.indices[0]]) {
+            firstWord = w;
+          } 
+          if (wordNumber < currentWordNumber) {
+            if (!nextWord) {
+              nextWord = w
+            } else {
+              if ($numbers[w.indices[0]] > $numbers[nextWord.indices[0]]) {
+                nextWord = w;
+              }
+            }
+          }
+        }
+      }
+      if (nextWord) {
+        console.log('Have next word',nextWord)
+        if (amount > 0) {
+          return nextWord.indices[0];
+        } else {
+          return nextWord.indices.slice(-1)[0]
+        }
+      } else if (firstWord) {
+        if (amount > 0) {
+          return firstWord.indices[0]
+        } else {
+          return firstWord.indices.slice(-1)[0]
+        }
+      } else {        
+        console.log('getNextDownSquareByWord Oops? fallback')
+        return idx + amount
+      }
+
+
     }
   }
 
   function moveDown(idx, amount = 1) {
-    let { rn, cn } = getInfo(idx);
-    let next = (rn + amount) * $x + cn;
-    if (next >= $x * $y) {
-      if (cn < $x - 1) {
-        next = cn + 1;
-      } else {
-        next = 0;
-      }
-    }
-    if (lockMode && $letters[next]=='.' && amount) {
-      moveDown(next,amount)
+    let word : Word = $downs.find(
+      (w : Word) => w.indices.indexOf(idx) > -1
+    );
+    let next = idx;
+    if (lockMode && word) {
+      next = getNextDownSquareByWord(idx,amount,word)
     } else {
-      let input = getInput(next);
+      console.log('In word',word)
+      let { rn, cn } = getInfo(idx);
+      if (rn==($y-1) && amount > 0) { // end of row, moving forward
+        rn = 0;
+        cn += amount;
+        if (cn >= $x) {
+          cn = 0;
+        }
+      } else if (rn==0 && amount < 0) { // start of row, moving backward
+        rn = $y - 1;
+        cn += amount;
+        if (cn < 0) {
+          cn = $x - 1;
+        }
+      } else {
+        rn += amount;
+      }
+      next = rn * $x + cn;      
+    }
+    let input = getInput(next);
+    if (input) {
       input.focus();
       input.select();
-    }
+    }    
   }
   
   function setLetter (idx, val) {
@@ -255,6 +341,9 @@
   let mirrorMode : boolean = true;
   let title : string = "";
   let author : string = "";
+  $: if (playMode) {
+    lockMode = true;
+  }
 </script>
 <nav>
   {#if !playMode}
@@ -444,7 +533,13 @@
     max-height: calc(2 * var(--size));
     overflow-y: scroll;
     pointer-events: none;
+    -ms-overflow-style: none;
+    scrollbar-width: none;    
   }
+  .possible::-webkit-scrollbar {
+    display: none;
+  }
+  
 
   .warning {
     color: #822;
