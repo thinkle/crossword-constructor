@@ -23,10 +23,16 @@
   setContext("puzzleContext", p);
   let {
     x, y, numbers, letters, possibleLetters,
-    clues, acrosses, downs, currentCell
+    clues, acrosses, downs, currentCell, autoMode
   } = p;
 
   let answers = writable([])
+
+  $: if (lockMode) {
+    $autoMode = true
+  } else {
+    $autoMode = false;
+  }
 
   $: $x = xsize;
   $: $y = ysize;

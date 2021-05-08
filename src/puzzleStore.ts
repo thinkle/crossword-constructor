@@ -113,45 +113,53 @@ export function makePuzzleStore(
 
   let matches = writable({});
   let wordMatches = writable({ across: [], down: [] });
+  let currentLetterCalculator = undefined;
   let possibleLetters = derived(
     [acrosses, downs, matches, wordMatches],
-    ([$acrosses, $downs, $matches, $wordMatches]) => {
-      let lettersByIndex = {};
-      for (let wordList of [$acrosses, $downs]) {
-        for (let word of wordList) {
-          for (let ci = 0; ci < word.word.length; ci++) {
-            let gridIndex = word.indices[ci];
-            if (!lettersByIndex[gridIndex]) {
-              lettersByIndex[gridIndex] = {
-                across: new Set(),
-                down: new Set(),
-              };
+    ([$acrosses, $downs, $matches, $wordMatches], set) => {
+      set({});
+      if (currentLetterCalculator) {
+        clearTimeout(currentLetterCalculator);
+      }
+      currentLetterCalculator = setTimeout(() => {
+        let lettersByIndex = {};
+        for (let wordList of [$acrosses, $downs]) {
+          for (let word of wordList) {
+            for (let ci = 0; ci < word.word.length; ci++) {
+              let gridIndex = word.indices[ci];
+              if (!lettersByIndex[gridIndex]) {
+                lettersByIndex[gridIndex] = {
+                  across: new Set(),
+                  down: new Set(),
+                };
+              }
+            }
+            let theMatches = $matches[word.word];
+            if ($wordMatches.across.length) {
+              theMatches = $wordMatches[word.type][word.index];
+            }
+            if (theMatches) {
+              theMatches.forEach((match) => {
+                for (
+                  let letterIndex = 0;
+                  letterIndex < match.length;
+                  letterIndex++
+                ) {
+                  let gridIndex = word.indices[letterIndex];
+                  if (isNaN(gridIndex)) {
+                    console.log("Oops", theMatches, "no fit", word);
+                  } else {
+                    let letter = match[letterIndex];
+                    lettersByIndex[gridIndex][word.type].add(letter);
+                  }
+                }
+              });
             }
           }
-          let theMatches = $matches[word.word];
-          if ($wordMatches.across.length) {
-            theMatches = $wordMatches[word.type][word.index];
-          }
-          if (theMatches) {
-            theMatches.forEach((match) => {
-              for (
-                let letterIndex = 0;
-                letterIndex < match.length;
-                letterIndex++
-              ) {
-                let gridIndex = word.indices[letterIndex];
-                if (isNaN(gridIndex)) {
-                  console.log("Oops", theMatches, "no fit", word);
-                } else {
-                  let letter = match[letterIndex];
-                  lettersByIndex[gridIndex][word.type].add(letter);
-                }
-              }
-            });
-          }
         }
-      }
-      return lettersByIndex;
+        set(lettersByIndex);
+      }, 10);
+      return () => {};
     }
   );
 
@@ -196,6 +204,13 @@ export function makePuzzleStore(
 
   let autoUpdate = true;
   let updating = false;
+
+  let autoMode = writable(true);
+  autoMode.subscribe((am) => {
+    console.log("Set autoUpdate to ", am);
+    autoUpdate = am;
+  });
+
   letters.subscribe(($letters) => {
     wordMatches.set({ across: [], down: [] });
     if (!updating && autoUpdate) {
@@ -306,6 +321,7 @@ export function makePuzzleStore(
     matches,
     updateMatches,
     wordMatches,
+    autoMode,
     currentCell: writable(null),
   };
   // I was halfway to implementing some row magic but let's put that off for now...
