@@ -66,13 +66,9 @@
 
   function updateActiveWord (idx) {
     if ($currentCell.direction == 'across') {
-      activeWord = $acrosses.find(
-        (word : Word)=>word.indices.indexOf(idx)>-1
-      )
-    } else {
-      activeWord = $downs.find(
-        (word : Word)=>word.indices.indexOf(idx)>-1
-      );
+      activeWord = getAcrossWord(idx);
+    } else {      
+      activeWord = getDownWord(idx); 
     }
   }
 
@@ -239,20 +235,23 @@
 
   function onKeyDown(event) {    
     let idx = Number(event.target.getAttribute("item"));
-    let { cn, rn } = getInfo(idx);
+    let { cn, rn } = getInfo(idx);    
     let mirrorRn = $y - rn - 1;
-    let mirrorCn = $x - cn - 1;
+    let mirrorCn = $x - cn - 1;    
     let mirrorIdx = p.idx(mirrorRn,mirrorCn);
+    if (leftRightSymmetryMode) {
+      mirrorRn = rn;
+      mirrorCn = $x - cn - 1;
+      mirrorIdx = p.idx(mirrorRn,mirrorCn);
+    }
     if (isInput(event)) { 
       if (lockMode && event.code=='Period' || $letters[idx]=='.') {
-        console.log('ignore')
+        //showGridIsLockedWarning
+        console.log('grid is locked');
       } else { 
         if (!playMode && mirrorMode && !lockMode) {    
-          if (event.code=='Period') {        
-            console.log('Special case period!')        
-            if ($letters[mirrorIdx]=='?') {
-              $letters[mirrorIdx] = '.';
-            }
+          if (event.code=='Period') {                                
+            $letters[mirrorIdx] = '.';            
           } else {
             if ($letters[mirrorIdx]=='.') {
               $letters[mirrorIdx] = '?';
@@ -343,8 +342,21 @@
     return a;
   }
 
+  function getAcrossWord (idx) {
+    return $acrosses.find(
+        (word : Word)=>word.indices.indexOf(idx)>-1
+    )
+  }
+
+  function getDownWord (idx) {
+    return $downs.find(
+        (word : Word)=>word.indices.indexOf(idx)>-1
+    );
+  }
+
   let lockMode : boolean = false;
   let mirrorMode : boolean = true;
+  let leftRightSymmetryMode : boolean = false;
   let title : string = "";
   let author : string = "";
   $: if (playMode) {
@@ -357,6 +369,7 @@
     <button on:click={() => ($letters = $letters.map((l) => l=="."&&"."||"?"))}>Clear Letters</button>
     <input type="checkbox" bind:checked={lockMode}> Lock black
     <input type="checkbox" bind:checked={mirrorMode}>Mirror mode                                              
+    <input type="checkbox" bind:checked={leftRightSymmetryMode}>Left/Right                                              
     <button on:click={p.updateMatches}>Update</button>
     <button on:click={()=>solvePuzzle(p)}>Solve</button>
     <button on:click={()=>{widthDelta+=10}}>+</button>
@@ -399,11 +412,14 @@
                   bind:value={$answers[p.idx(rn,cn)]}
                 />
               {:else}
+                          
                 <input
                   class="square"
                   class:solid={$letters[p.idx(rn,cn)] == "."}
                   class:active={activeWord?.indices?.indexOf(p.idx(rn,cn))>-1}
                   class:missing={$letters[p.idx(rn,cn)]=="?"}
+                  class:short={getAcrossWord(p.idx(rn,cn),$acrosses)?.indices?.length < 3
+                   || getDownWord(p.idx(rn,cn),$downs)?.indices?.length < 3}
                   on:focus={onFocus}
                   on:keydown={onKeyDown}
                   item={p.idx(rn,cn)}
@@ -513,7 +529,9 @@
   input.solid {
     background-color: black;
   }
-
+  input.short {
+    background-color: #ffdd88;
+  }
 
   .inputwrapper {
     position: relative;
