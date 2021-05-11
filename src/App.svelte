@@ -3,8 +3,8 @@
   import LetterCounter from './LetterCounter.svelte';
   import CustomWordList from './CustomWordList.svelte';
   let playMode;
-  let x: number = 4;
-  let y: number = 4;
+  let x: number = 15;
+  let y: number = 15;
   let letters = [];
   $: if (x < 1) {x = 1}
   $: if (y < 1) {y = 1}
