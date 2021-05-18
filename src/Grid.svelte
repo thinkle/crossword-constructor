@@ -1,35 +1,44 @@
 <script lang="ts">
   import { tick, setContext, getContext } from "svelte";
-  import { writable } from 'svelte/store'
+  import { writable } from "svelte/store";
   import { makePuzzleStore } from "./puzzleStore";
-  import type {PuzzleContext} from './puzzleStore';
-  import { solvePuzzle } from './solver';
-  import type {Word} from './puzzleStore'
+  import type { PuzzleContext } from "./puzzleStore";
+  import { solvePuzzle } from "./solver";
+  import type { Word } from "./puzzleStore";
   import WordLists from "./WordLists.svelte";
-  import DownloadButton from './DownloadButton.svelte';
-  import Saver from './Saver.svelte';
-  import {createPuzzleFile} from './acrosslite'
+  import DownloadButton from "./DownloadButton.svelte";
+  import Saver from "./Saver.svelte";
+  import { createPuzzleFile } from "./acrosslite";
   export let playMode;
   export let xsize: number;
   export let ysize: number;
   export let initialLetters = [];
   let widthDelta = 200;
-  let fullWidth = 0;  
+  let fullWidth = 0;
   let gridMax = 4;
-  $: gridMax = Math.max($x,$y);
+  $: gridMax = Math.max($x, $y);
   let size = 2;
-  let p : PuzzleContext = makePuzzleStore(initialLetters, xsize, ysize);
-  console.log('Made magic',p)
+  let p: PuzzleContext = makePuzzleStore(initialLetters, xsize, ysize);
+  console.log("Made magic", p);
   setContext("puzzleContext", p);
   let {
-    x, y, numbers, letters, possibleLetters,
-    clues, acrosses, downs, currentCell, autoMode
+    x,
+    y,
+    numbers,
+    letters,
+    possibleLetters,
+    clues,
+    acrosses,
+    downs,
+    currentCell,
+    autoMode,
+    scoreCutoff,
   } = p;
 
-  let answers = writable([])
+  let answers = writable([]);
 
   $: if (lockMode) {
-    $autoMode = true
+    $autoMode = true;
   } else {
     $autoMode = false;
   }
@@ -45,50 +54,50 @@
     size = 3;
   }
 
-  $: if ($letters.length != $x * $y) {    
+  $: if ($letters.length != $x * $y) {
     $letters = $letters.slice(0, $x * $y);
     while ($letters.length < $x * $y) {
-      $letters.push('?');
+      $letters.push("?");
     }
     // Wait to change otherwise we do tons of extra work as we go
     $letters = $letters;
   }
-  
+
   /* let ROW = 1;
   let COL = 2;
   let mode: ROW | COL = ROW; */
-  let activeWord : Word | null = null;
-  
+  let activeWord: Word | null = null;
+
   function isInput(event) {
-    console.log('key?',event.key)
-    return event.key.length==1 && event.key.match(/[A-Za-z.]/)
+    console.log("key?", event.key);
+    return event.key.length == 1 && event.key.match(/[A-Za-z.]/);
   }
 
-  function updateActiveWord (idx) {
-    if ($currentCell.direction == 'across') {
+  function updateActiveWord(idx) {
+    if ($currentCell.direction == "across") {
       activeWord = getAcrossWord(idx);
-    } else {      
-      activeWord = getDownWord(idx); 
+    } else {
+      activeWord = getDownWord(idx);
     }
   }
 
   let locallySetCell = -1;
   $: if ($currentCell && $currentCell.index != locallySetCell) {
-      moveRight($currentCell.index,0)
+    moveRight($currentCell.index, 0);
   }
 
   function onFocus(event) {
-    let idx = Number(event.target.getAttribute("item"));    
+    let idx = Number(event.target.getAttribute("item"));
     if ($currentCell) {
-      $currentCell.index = idx
+      $currentCell.index = idx;
     } else {
       $currentCell = {
-        index : idx,      
-        direction : 'across'
-      }
-    };
+        index: idx,
+        direction: "across",
+      };
+    }
     locallySetCell = idx;
-    updateActiveWord(idx)        
+    updateActiveWord(idx);
     event.target.select();
   }
 
@@ -112,8 +121,8 @@
     if (next < 0) {
       next = $x * $y - 1;
     }
-    if (lockMode && $letters[next]=='.' && amount) {
-      moveRight(next,amount)
+    if (lockMode && $letters[next] == "." && amount) {
+      moveRight(next, amount);
     } else {
       let input = getInput(next);
       if (input) {
@@ -123,44 +132,51 @@
     }
   }
 
-  function getNextDownSquareByWord (idx, amount, word) {
-    console.log('get next by word',word)
+  function getNextDownSquareByWord(idx, amount, word) {
+    console.log("get next by word", word);
     let { rn, cn } = getInfo(idx);
-    let rawNext = (rn + amount) * $x + cn;    
+    let rawNext = (rn + amount) * $x + cn;
     if (word.indices.indexOf(rawNext) > -1) {
-      return rawNext
+      return rawNext;
     } else {
       /* Ok we are switching words... */
       let currentWordNumber = $numbers[word.indices[0]];
-      console.log('cw# = ',currentWordNumber)
+      console.log("cw# = ", currentWordNumber);
       let nextWord;
       let firstWord;
-      for (let w of $downs) {        
+      for (let w of $downs) {
         let wordNumber = $numbers[w.indices[0]];
-        console.log('Compare to ',wordNumber)
+        console.log("Compare to ", wordNumber);
         if (amount > 0) {
-          if (firstWord===undefined || $numbers[w.indices[0]] < $numbers[firstWord.indices[0]]) {
+          if (
+            firstWord === undefined ||
+            $numbers[w.indices[0]] < $numbers[firstWord.indices[0]]
+          ) {
             firstWord = w;
-          } 
+          }
           // next
           if (wordNumber > currentWordNumber) {
             if (!nextWord) {
-              nextWord= w
-              console.log('Sure');
+              nextWord = w;
+              console.log("Sure");
             } else {
               if ($numbers[w.indices[0]] < $numbers[nextWord.indices[0]]) {
-                nextWord= w;
-                console.log('Sure')
+                nextWord = w;
+                console.log("Sure");
               }
             }
           }
-        } else { // moving up...
-          if (firstWord===undefined || $numbers[w.indices[0]] > $numbers[firstWord.indices[0]]) {
+        } else {
+          // moving up...
+          if (
+            firstWord === undefined ||
+            $numbers[w.indices[0]] > $numbers[firstWord.indices[0]]
+          ) {
             firstWord = w;
-          } 
+          }
           if (wordNumber < currentWordNumber) {
             if (!nextWord) {
-              nextWord = w
+              nextWord = w;
             } else {
               if ($numbers[w.indices[0]] > $numbers[nextWord.indices[0]]) {
                 nextWord = w;
@@ -170,44 +186,42 @@
         }
       }
       if (nextWord) {
-        console.log('Have next word',nextWord)
+        console.log("Have next word", nextWord);
         if (amount > 0) {
           return nextWord.indices[0];
         } else {
-          return nextWord.indices.slice(-1)[0]
+          return nextWord.indices.slice(-1)[0];
         }
       } else if (firstWord) {
         if (amount > 0) {
-          return firstWord.indices[0]
+          return firstWord.indices[0];
         } else {
-          return firstWord.indices.slice(-1)[0]
+          return firstWord.indices.slice(-1)[0];
         }
-      } else {        
-        console.log('getNextDownSquareByWord Oops? fallback')
-        return idx + amount
+      } else {
+        console.log("getNextDownSquareByWord Oops? fallback");
+        return idx + amount;
       }
-
-
     }
   }
 
   function moveDown(idx, amount = 1) {
-    let word : Word = $downs.find(
-      (w : Word) => w.indices.indexOf(idx) > -1
-    );
+    let word: Word = $downs.find((w: Word) => w.indices.indexOf(idx) > -1);
     let next = idx;
     if (lockMode && word) {
-      next = getNextDownSquareByWord(idx,amount,word)
+      next = getNextDownSquareByWord(idx, amount, word);
     } else {
-      console.log('In word',word)
+      console.log("In word", word);
       let { rn, cn } = getInfo(idx);
-      if (rn==($y-1) && amount > 0) { // end of row, moving forward
+      if (rn == $y - 1 && amount > 0) {
+        // end of row, moving forward
         rn = 0;
         cn += amount;
         if (cn >= $x) {
           cn = 0;
         }
-      } else if (rn==0 && amount < 0) { // start of row, moving backward
+      } else if (rn == 0 && amount < 0) {
+        // start of row, moving backward
         rn = $y - 1;
         cn += amount;
         if (cn < 0) {
@@ -216,16 +230,16 @@
       } else {
         rn += amount;
       }
-      next = rn * $x + cn;      
+      next = rn * $x + cn;
     }
     let input = getInput(next);
     if (input) {
       input.focus();
       input.select();
-    }    
+    }
   }
-  
-  function setLetter (idx, val) {
+
+  function setLetter(idx, val) {
     if (playMode) {
       $answers[idx] = val;
     } else {
@@ -233,104 +247,104 @@
     }
   }
 
-  function onKeyDown(event) {    
+  function onKeyDown(event) {
     let idx = Number(event.target.getAttribute("item"));
-    let { cn, rn } = getInfo(idx);    
+    let { cn, rn } = getInfo(idx);
     let mirrorRn = $y - rn - 1;
-    let mirrorCn = $x - cn - 1;    
-    let mirrorIdx = p.idx(mirrorRn,mirrorCn);
+    let mirrorCn = $x - cn - 1;
+    let mirrorIdx = p.idx(mirrorRn, mirrorCn);
     if (leftRightSymmetryMode) {
       mirrorRn = rn;
       mirrorCn = $x - cn - 1;
-      mirrorIdx = p.idx(mirrorRn,mirrorCn);
+      mirrorIdx = p.idx(mirrorRn, mirrorCn);
     }
-    if (isInput(event)) { 
-      if (lockMode && event.code=='Period' || $letters[idx]=='.') {
+    if (isInput(event)) {
+      if ((lockMode && event.code == "Period") || $letters[idx] == ".") {
         //showGridIsLockedWarning
-        console.log('grid is locked');
-      } else { 
-        if (!playMode && mirrorMode && !lockMode) {    
-          if (event.code=='Period') {                                
-            $letters[mirrorIdx] = '.';            
+        console.log("grid is locked");
+      } else {
+        if (!playMode && mirrorMode && !lockMode) {
+          if (event.code == "Period") {
+            $letters[mirrorIdx] = ".";
           } else {
-            if ($letters[mirrorIdx]=='.') {
-              $letters[mirrorIdx] = '?';
+            if ($letters[mirrorIdx] == ".") {
+              $letters[mirrorIdx] = "?";
             }
-          }      
+          }
         }
-        setLetter(idx,event.key.toUpperCase())
-        if ($currentCell?.direction == 'across') {
+        setLetter(idx, event.key.toUpperCase());
+        if ($currentCell?.direction == "across") {
           moveRight(idx);
-        } else {          
+        } else {
           moveDown(idx);
         }
       }
       event.preventDefault();
-    } else if (event.code == 'Backspace') {   
-      if ($letters[idx]=='.' && lockMode) {
-        event.preventDefault()
+    } else if (event.code == "Backspace") {
+      if ($letters[idx] == "." && lockMode) {
+        event.preventDefault();
       } else {
-        setLetter(idx,'?')
-        if (mirrorMode && !playMode) { 
-          if ($letters[mirrorIdx]=='.') {
-            $letters[mirrorIdx] = '?';
+        setLetter(idx, "?");
+        if (mirrorMode && !playMode) {
+          if ($letters[mirrorIdx] == ".") {
+            $letters[mirrorIdx] = "?";
           }
         }
-        if ($currentCell.direction=='down') {
-          moveDown(idx,-1);
+        if ($currentCell.direction == "down") {
+          moveDown(idx, -1);
         } else {
-          moveRight(idx,-1);
+          moveRight(idx, -1);
         }
-        event.preventDefault()
+        event.preventDefault();
       }
     } else if (event.code == "ArrowLeft" || event.code == "ArrowRight") {
-      if ($currentCell.direction != 'across') {
+      if ($currentCell.direction != "across") {
         let { cn, rn } = getInfo(idx);
-        $currentCell.direction = 'across';        
+        $currentCell.direction = "across";
         event.target.select();
         updateActiveWord(idx);
       } else {
         moveRight(idx, (event.code == "ArrowRight" && 1) || -1);
       }
     } else if (event.code == "ArrowDown" || event.code == "ArrowUp") {
-      if ($currentCell.direction != 'down') {
+      if ($currentCell.direction != "down") {
         let { cn, rn } = getInfo(idx);
-        $currentCell.direction = 'down';
+        $currentCell.direction = "down";
         event.target.select();
         updateActiveWord(idx);
       } else {
         moveDown(idx, (event.code == "ArrowDown" && 1) || -1);
       }
-    } else if (event.code == 'Tab') {
-      console.log("Tab!",event);
+    } else if (event.code == "Tab") {
+      console.log("Tab!", event);
       if (activeWord) {
         let nextWordIndex;
         if (event.shiftKey) {
           nextWordIndex = activeWord.index - 1;
-        } else { 
+        } else {
           nextWordIndex = activeWord.index + 1;
         }
         let wordList = $downs;
-        if (activeWord.type=='across') {
-          wordList = $acrosses 
-        } 
+        if (activeWord.type == "across") {
+          wordList = $acrosses;
+        }
         if (wordList.length <= nextWordIndex) {
           nextWordIndex = 0;
         } else if (nextWordIndex < 0) {
           nextWordIndex = wordList.length - 1;
         }
         let nextWord = wordList[nextWordIndex];
-        if ($currentCell.direction=='across') {
-          moveRight(nextWord.indices[0],0);
+        if ($currentCell.direction == "across") {
+          moveRight(nextWord.indices[0], 0);
         } else {
-          moveDown(nextWord.indices[0],0);
+          moveDown(nextWord.indices[0], 0);
         }
         event.preventDefault();
       } else {
-        console.log('no word, weird')
+        console.log("no word, weird");
       }
     } else {
-      console.log('Unhandled code',event.code)
+      console.log("Unhandled code", event.code);
     }
   }
 
@@ -342,96 +356,118 @@
     return a;
   }
 
-  function getAcrossWord (idx) {
-    return $acrosses.find(
-        (word : Word)=>word.indices.indexOf(idx)>-1
-    )
+  function getAcrossWord(idx) {
+    return $acrosses.find((word: Word) => word.indices.indexOf(idx) > -1);
   }
 
-  function getDownWord (idx) {
-    return $downs.find(
-        (word : Word)=>word.indices.indexOf(idx)>-1
-    );
+  function getDownWord(idx) {
+    return $downs.find((word: Word) => word.indices.indexOf(idx) > -1);
   }
 
-  let lockMode : boolean = false;
-  let mirrorMode : boolean = true;
-  let leftRightSymmetryMode : boolean = false;
-  let title : string = "";
-  let author : string = "";
+  let lockMode: boolean = false;
+  let mirrorMode: boolean = true;
+  let leftRightSymmetryMode: boolean = false;
+  let title: string = "";
+  let author: string = "";
   $: if (playMode) {
     lockMode = true;
   }
 </script>
+
 <nav>
   {#if !playMode}
-    <button on:click={() => ($letters = $letters.map(() => "?"))}>Clear All</button>
-    <button on:click={() => ($letters = $letters.map((l) => l=="."&&"."||"?"))}>Clear Letters</button>
-    <input type="checkbox" bind:checked={lockMode}> Lock black
-    <input type="checkbox" bind:checked={mirrorMode}>Mirror mode                                              
-    <input type="checkbox" bind:checked={leftRightSymmetryMode}>Left/Right                                              
+    <button on:click={() => ($letters = $letters.map(() => "?"))}
+      >Clear All</button
+    >
+    <button
+      on:click={() =>
+        ($letters = $letters.map((l) => (l == "." && ".") || "?"))}
+      >Clear Letters</button
+    >
+    <input type="checkbox" bind:checked={lockMode} /> Lock black
+    <input type="checkbox" bind:checked={mirrorMode} />Mirror mode
+    <input type="checkbox" bind:checked={leftRightSymmetryMode} />Left/Right
     <button on:click={p.updateMatches}>Update</button>
-    <button on:click={()=>solvePuzzle(p)}>Solve</button>
-    <button on:click={()=>{widthDelta+=10}}>+</button>
-    <button on:click={()=>{widthDelta-=10}}>-</button>
-    <Saver bind:title={title} bind:author={author}/>
+    <button on:click={() => solvePuzzle(p)}>Solve</button>
+    <button
+      on:click={() => {
+        widthDelta += 10;
+      }}>+</button
+    >
+    <button
+      on:click={() => {
+        widthDelta -= 10;
+      }}>-</button
+    >
+    Min word: <input bind:value={$scoreCutoff} type="number" min="0" max="50" />
+    <Saver bind:title bind:author />
   {/if}
   <DownloadButton
-    content={createPuzzleFile($letters,$x,$y,$clues,title,author)}
-    filename={`${new Date().toLocaleDateString().replace(/\//g,'-')}.txt`}
-  >Download Acrosslite</DownloadButton>        
-</nav> 
+    content={createPuzzleFile($letters, $x, $y, $clues, title, author)}
+    filename={`${new Date().toLocaleDateString().replace(/\//g, "-")}.txt`}
+    >Download Acrosslite</DownloadButton
+  >
+</nav>
 <div class="titlebar">
   {#if playMode}
-    <h3>{title||"Untitled"}</h3> by <span class="author">{author}</span>
+    <h3>{title || "Untitled"}</h3>
+    by<span class="author">{author}</span>
   {:else}
-    <input bind:value={title} placeholder="Title" class="title"> by <input placeholder="Author" class="author" bind:value={author}>
+    <input bind:value={title} placeholder="Title" class="title" /> by
+    <input placeholder="Author" class="author" bind:value={author} />
   {/if}
 </div>
-<div class="sbs" bind:clientWidth={fullWidth} 
-  style="--grid-width:{fullWidth}px;--grid-max:{gridMax};--size:{Math.min(fullWidth-widthDelta,widthDelta*2.5)/(gridMax*2)}px">
-  {#each [{ $x , $y }] as newGrid}
-    <section class={`grid size-${size}`}>      
-          
+<div
+  class="sbs"
+  bind:clientWidth={fullWidth}
+  style="--grid-width:{fullWidth}px;--grid-max:{gridMax};--size:{Math.min(
+    fullWidth - widthDelta,
+    widthDelta * 2.5
+  ) /
+    (gridMax * 2)}px"
+>
+  {#each [{ $x, $y }] as newGrid}
+    <section class={`grid size-${size}`}>
       {#each range($y) as rn (rn)}
         <div class="row">
           {#each range($x) as cn (cn)}
             <div class="inputwrapper">
               <!-- Fix me -->
               <span class="number">
-                {$numbers[p.idx(rn,cn)]||''}
+                {$numbers[p.idx(rn, cn)] || ""}
               </span>
               {#if playMode}
                 <input
                   class="square"
-                  class:solid={$letters[p.idx(rn,cn)] == "."}
-                  class:active={activeWord?.indices?.indexOf(p.idx(rn,cn))>-1}
+                  class:solid={$letters[p.idx(rn, cn)] == "."}
+                  class:active={activeWord?.indices?.indexOf(p.idx(rn, cn)) >
+                    -1}
                   on:focus={onFocus}
                   on:keydown={onKeyDown}
-                  item={p.idx(rn,cn)}
-                  bind:value={$answers[p.idx(rn,cn)]}
+                  item={p.idx(rn, cn)}
+                  bind:value={$answers[p.idx(rn, cn)]}
                 />
               {:else}
-                          
                 <input
                   class="square"
-                  class:solid={$letters[p.idx(rn,cn)] == "."}
-                  class:active={activeWord?.indices?.indexOf(p.idx(rn,cn))>-1}
-                  class:missing={$letters[p.idx(rn,cn)]=="?"}
-                  class:short={getAcrossWord(p.idx(rn,cn),$acrosses)?.indices?.length < 3
-                   || getDownWord(p.idx(rn,cn),$downs)?.indices?.length < 3}
+                  class:solid={$letters[p.idx(rn, cn)] == "."}
+                  class:active={activeWord?.indices?.indexOf(p.idx(rn, cn)) >
+                    -1}
+                  class:missing={$letters[p.idx(rn, cn)] == "?"}
+                  class:short={getAcrossWord(p.idx(rn, cn), $acrosses)?.indices
+                    ?.length < 3 ||
+                    getDownWord(p.idx(rn, cn), $downs)?.indices?.length < 3}
                   on:focus={onFocus}
                   on:keydown={onKeyDown}
-                  item={p.idx(rn,cn)}
-                  bind:value={$letters[p.idx(rn,cn)]}
+                  item={p.idx(rn, cn)}
+                  bind:value={$letters[p.idx(rn, cn)]}
                 />
-                {#if $letters[p.idx(rn,cn)] == "?" && $possibleLetters[p.idx(rn,cn)]?.across}
-                  <span class="possible">                    
-                    {#each [...$possibleLetters[p.idx(rn,cn)].across].filter((l)=>$possibleLetters[p.idx(rn,cn)].down?.has(l)) as letter}
-                        {letter}
+                {#if $letters[p.idx(rn, cn)] == "?" && $possibleLetters[p.idx(rn, cn)]?.across}
+                  <span class="possible">
+                    {#each [...$possibleLetters[p.idx(rn, cn)].across].filter( (l) => $possibleLetters[p.idx(rn, cn)].down?.has(l) ) as letter}
+                      {letter}
                     {:else}
-                      <span class="warning">No match                      
-                      </span>
+                      <span class="warning">No match </span>
                     {/each}
                   </span>
                 {/if}
@@ -439,13 +475,11 @@
             </div>
           {/each}
         </div>
-      {/each}      
+      {/each}
     </section>
   {/each}
   <section class="words">
-    <WordLists
-      {playMode}
-    />
+    <WordLists {playMode} />
   </section>
 </div>
 
@@ -516,7 +550,7 @@
 
   input.active {
     background-color: #ffffaa;
-  }  
+  }
   input.active:focused {
     background-color: #ffff00;
     font-weight: bold;
@@ -524,7 +558,6 @@
   input.missing {
     color: #ddd;
   }
-
 
   input.solid {
     background-color: black;
@@ -542,15 +575,14 @@
     pointer-events: none;
     top: 2px;
     left: 2px;
-    font-size: calc(var(--size)/2);
+    font-size: calc(var(--size) / 2);
   }
-
 
   .possible {
     position: absolute;
     right: 2px;
     top: 2px;
-    font-size: calc(var(--size)/3);
+    font-size: calc(var(--size) / 3);
     color: #8af;
     word-break: break-all;
     max-width: calc(1.3 * var(--size));
@@ -558,12 +590,11 @@
     overflow-y: scroll;
     pointer-events: none;
     -ms-overflow-style: none;
-    scrollbar-width: none;    
+    scrollbar-width: none;
   }
   .possible::-webkit-scrollbar {
     display: none;
   }
-  
 
   .warning {
     color: #822;

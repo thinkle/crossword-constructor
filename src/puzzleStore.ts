@@ -1,7 +1,7 @@
 import { writable, get, derived } from "svelte/store";
 import type { Writable, Readable } from "svelte/store";
 import { tick } from "svelte";
-import { findMatches } from "./findMatches";
+import { findMatches, scores } from "./findMatches";
 import { getPossible } from "./solver";
 export interface Word {
   word: string;
@@ -23,6 +23,8 @@ export interface PuzzleContext {
   wordMatches: Readable<{}>;
   idx(rn: number, cn: number): number;
   currentCell: Writable<{ index: number; direction: "across" | "down" } | null>;
+  autoMode: Writable<boolean>;
+  scoreCutoff: Writable<number>;
 }
 
 export function makePuzzleStore(
@@ -38,6 +40,7 @@ export function makePuzzleStore(
   };
   let x = writable(initialX);
   let y = writable(initialY);
+  let scoreCutoff = writable(30);
   let idx = (rn: number, cn: number): number => {
     return rn * get(x) + cn;
   };
@@ -166,12 +169,13 @@ export function makePuzzleStore(
   function updateMatches() {
     let $acrosses = get(acrosses);
     let $downs = get(downs);
+    let $scoreCutoff = get(scoreCutoff);
     wordMatches.set({ across: [], down: [] });
     matches.update(($matches) => {
       [$acrosses, $downs].forEach((wordList) => {
         wordList.forEach((word) => {
           if (!$matches[word.word]) {
-            $matches[word.word] = findMatches(word.word);
+            $matches[word.word] = findMatches(word.word, $scoreCutoff);
           }
         });
       });
@@ -308,6 +312,28 @@ export function makePuzzleStore(
     return result;
   }
 
+  // Redo the cutoff
+  let lastCutoff = get(scoreCutoff);
+  scoreCutoff.subscribe(($scoreCutoff) => {
+    // filter existing words...
+    if ($scoreCutoff < lastCutoff) {
+      matches.update(($matches) => {
+        for (let key in $matches) {
+          $matches[key] = $matches[key].filter((w) => scores[w] > $scoreCutoff);
+        }
+        return $matches;
+      });
+    } else {
+      // if we include more words, we just have to redo the search
+      matches.update(($matches) => {
+        for (let key in $matches) {
+          $matches[key] = findMatches(key, $scoreCutoff);
+        }
+        return $matches;
+      });
+    }
+  });
+
   return {
     letters,
     numbers,
@@ -323,6 +349,7 @@ export function makePuzzleStore(
     wordMatches,
     autoMode,
     currentCell: writable(null),
+    scoreCutoff,
   };
   // I was halfway to implementing some row magic but let's put that off for now...
   /* let oldX = x;
