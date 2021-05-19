@@ -15,8 +15,8 @@
   export let initialLetters = [];
   let widthDelta = 200;
   let fullWidth = 0;
-  let gridMax = 4;
-  $: gridMax = Math.max($x, $y);
+  let gridLetterSize = 4;
+  $: gridLetterSize = Math.max($x, $y);
   let size = 2;
   let p: PuzzleContext = makePuzzleStore(initialLetters, xsize, ysize);
   console.log("Made magic", p);
@@ -372,6 +372,17 @@
   $: if (playMode) {
     lockMode = true;
   }
+
+  let zoomPercentage = 1;
+  let originalClientWidth = 0;
+  $: if (fullWidth != originalClientWidth) {
+    let roomLeft = originalClientWidth - 200;
+    if (roomLeft > 0) {
+      zoomPercentage = roomLeft / fullWidth;
+    } else {
+      zoomPercentage = 1;
+    }
+  }
 </script>
 
 <nav>
@@ -391,12 +402,12 @@
     <button on:click={() => solvePuzzle(p)}>Solve</button>
     <button
       on:click={() => {
-        widthDelta += 10;
+        zoomPercentage += 0.05;
       }}>+</button
     >
     <button
       on:click={() => {
-        widthDelta -= 10;
+        zoomPercentage -= 0.05;
       }}>-</button
     >
     Min word: <input bind:value={$scoreCutoff} type="number" min="0" max="50" />
@@ -420,11 +431,9 @@
 <div
   class="sbs"
   bind:clientWidth={fullWidth}
-  style="--grid-width:{fullWidth}px;--grid-max:{gridMax};--size:{Math.min(
-    fullWidth - widthDelta,
-    widthDelta * 2.5
-  ) /
-    (gridMax * 2)}px"
+  style="--grid-width:{fullWidth}px;
+  --grid-max:{gridLetterSize};
+  --size:{(fullWidth * zoomPercentage) / (gridLetterSize * 3)}px"
 >
   {#each [{ $x, $y }] as newGrid}
     <section class={`grid size-${size}`}>
@@ -507,6 +516,7 @@
     margin-right: auto;
     font-size: 1rem;
     align-items: center;
+    flex-wrap: wrap;
   }
 
   nav > :global(*) {

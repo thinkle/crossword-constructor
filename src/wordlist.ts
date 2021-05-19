@@ -7,7 +7,7 @@ export const words = [];
 export function importWordList(lines) {
   for (let line of lines) {
     let [word, score] = line.split(";");
-    word = word.replace(" ", "").toUpperCase();
+    word = word.replace(/[^A-Za-z]/, "").toUpperCase();
     words.push(word);
     scores[word] = Number(score);
   }

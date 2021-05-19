@@ -278,6 +278,10 @@ export function makePuzzleStore(
     });
   }
 
+  function sanitize(s: string) {
+    return s.replace(/[^A-Z1-9]/g, "");
+  }
+
   function filterMatches(word, $possibleLetters, possibleWords) {
     let matcher = new RegExp(
       "^" +
@@ -285,7 +289,9 @@ export function makePuzzleStore(
           .map(
             (i, wi) =>
               (word.word[wi] == "?" &&
-                "[" + getPossible($possibleLetters[i]).join("") + "]") ||
+                "[" +
+                  sanitize(getPossible($possibleLetters[i]).join("")) +
+                  "]") ||
               word.word[wi]
           )
           .join("") +

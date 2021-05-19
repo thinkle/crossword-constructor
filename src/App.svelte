@@ -1,13 +1,17 @@
 <script lang="ts">
   import Grid from "./Grid.svelte";
-  import LetterCounter from './LetterCounter.svelte';
-  import CustomWordList from './CustomWordList.svelte';
+  import LetterCounter from "./LetterCounter.svelte";
+  import CustomWordList from "./CustomWordList.svelte";
   let playMode;
   let x: number = 15;
   let y: number = 15;
   let letters = [];
-  $: if (x < 1) {x = 1}
-  $: if (y < 1) {y = 1}
+  $: if (x < 1) {
+    x = 1;
+  }
+  $: if (y < 1) {
+    y = 1;
+  }
 </script>
 
 <main>
@@ -24,14 +28,14 @@
       {:else}
         Play
       {/if}
-    </button>      
+    </button>
   </nav>
-  <Grid xsize= {x} ysize={y} {playMode} bind:initialLetters={letters} />
+  <Grid xsize={x} ysize={y} {playMode} bind:initialLetters={letters} />
   {#if !playMode}
-    <hr>
-    <h3>Letter Counter</h3>
-    <LetterCounter/>
-    <CustomWordList/>
+    <hr />
+    <!-- <h3>Letter Counter</h3> -->
+    <!-- <LetterCounter /> -->
+    <CustomWordList />
   {/if}
 </main>
 
@@ -53,7 +57,6 @@
   }
   main {
     padding: 1em;
-    max-width: 240px;
     margin: 0 auto;
   }
 
@@ -73,6 +76,7 @@
   nav {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
   }
 
   @media print {

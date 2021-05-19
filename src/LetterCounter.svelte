@@ -46,5 +46,6 @@
   textarea {
     width: 40vw;
     height: 300px;
+    border: 1px solid #aaa;
   }
 </style>
