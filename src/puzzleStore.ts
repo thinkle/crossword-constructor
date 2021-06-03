@@ -14,6 +14,7 @@ export interface PuzzleContext {
   clues: Writable<{ across: string[]; down: string[] }>;
   x: Writable<number>;
   y: Writable<number>;
+  circles: Writable<boolean[]>;
   acrosses: Readable<Word[]>;
   downs: Readable<Word[]>;
   possibleLetters: Readable<{}>;
@@ -340,9 +341,12 @@ export function makePuzzleStore(
     }
   });
 
+  let circles: Writable<boolean[]> = writable([]);
+
   return {
     letters,
     numbers,
+    circles,
     clues,
     x,
     y,

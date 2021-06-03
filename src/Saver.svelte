@@ -2,7 +2,7 @@
   import { getContext } from "svelte";
   export let title = "";
   export let author = "";
-  let { letters, x, y, clues } = getContext("puzzleContext");
+  let { letters, x, y, clues, circles } = getContext("puzzleContext");
 
   type puzzle = {
     x: number;
@@ -10,6 +10,7 @@
     title: string;
     author: string;
     letters: string[];
+    circles?: boolean[];
     clues: {
       across: string[];
       down: string[];
@@ -44,6 +45,7 @@
       clues: $clues,
       title,
       author,
+      circles: $circles,
     });
     localStorage.setItem("saved-crosswords", JSON.stringify(savedPuzzles));
   }
@@ -70,6 +72,9 @@
     }
     if (puzzle.author) {
       author = puzzle.author;
+    }
+    if (puzzle.circles) {
+      $circles = puzzle.circles;
     }
     puzzleOptions = [];
   }

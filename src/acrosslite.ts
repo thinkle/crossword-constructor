@@ -9,14 +9,19 @@ export function createPuzzleFile(
   y: number,
   clues: { across: string[]; down: string[] },
   title: string | null,
-  author: string | null
+  author: string | null,
+  circles: boolean[] | null
 ) {
   let grid = "";
   for (let row = 0; row < y; row++) {
     grid += "\t";
     for (let col = 0; col < x; col++) {
       let idx = row * x + col;
-      grid += letters[idx].replace(/[^A-Z.]/, "X");
+      if (circles && circles[idx]) {
+        grid += letters[idx].replace(/[^A-Z1-9.]/, "X").toLowerCase();
+      } else {
+        grid += letters[idx].replace(/[^A-Z1-9.]/, "X");
+      }
     }
     grid += "\n";
   }
@@ -32,9 +37,17 @@ export function createPuzzleFile(
 <SIZE>
   ${x}x${y}
 <GRID>
-${grid}<ACROSS>
-${clues.across.map((i) => (i || "No clue").replace(/\n/g, " ")).join("\n\t")}  
+${grid}<REBUS>
+MARK;
+<ACROSS>
+${clues.across
+  .map((i) => (i || "No clue").replace(/\s/g, " ").replace(/\s$/, ""))
+  .join("\n\t")}  
 <DOWN>
-${clues.down.map((i) => (i || "No clue").replace(/\n/g, " ")).join("\n\t")}  
+${clues.down
+  .map((i) => (i || "No clue").replace(/\s/g, " ").replace(/\s$/, ""))
+  .join("\n\t")}  
 `;
 }
+
+export function readPuzzleFile(s) {}

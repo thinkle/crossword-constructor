@@ -26,6 +26,7 @@
     y,
     numbers,
     letters,
+    circles,
     possibleLetters,
     clues,
     acrosses,
@@ -70,7 +71,14 @@
 
   function isInput(event) {
     console.log("key?", event.key);
-    return event.key.length == 1 && event.key.match(/[A-Za-z.]/);
+    if (event.key.length != 1) {
+      return false;
+    }
+    if (event.key.match(/[A-Za-z0-9.]/)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   function updateActiveWord(idx) {
@@ -258,6 +266,7 @@
       mirrorCn = $x - cn - 1;
       mirrorIdx = p.idx(mirrorRn, mirrorCn);
     }
+    event.preventDefault();
     if (isInput(event)) {
       if ((lockMode && event.code == "Period") || $letters[idx] == ".") {
         //showGridIsLockedWarning
@@ -279,7 +288,6 @@
           moveDown(idx);
         }
       }
-      event.preventDefault();
     } else if (event.code == "Backspace") {
       if ($letters[idx] == "." && lockMode) {
         event.preventDefault();
@@ -297,6 +305,10 @@
         }
         event.preventDefault();
       }
+    } else if (event.key == "*") {
+      console.log("asterix!");
+      $circles[idx] = !$circles[idx];
+      console.log(idx, "=>", $circles[idx]);
     } else if (event.code == "ArrowLeft" || event.code == "ArrowRight") {
       if ($currentCell.direction != "across") {
         let { cn, rn } = getInfo(idx);
@@ -414,9 +426,18 @@
     <Saver bind:title bind:author />
   {/if}
   <DownloadButton
-    content={createPuzzleFile($letters, $x, $y, $clues, title, author)}
-    filename={`${new Date().toLocaleDateString().replace(/\//g, "-")}.txt`}
-    >Download Acrosslite</DownloadButton
+    content={createPuzzleFile(
+      $letters,
+      $x,
+      $y,
+      $clues,
+      title,
+      author,
+      $circles
+    )}
+    filename={`${
+      title || new Date().toLocaleDateString().replace(/\//g, "-")
+    }.txt`}>Download Acrosslite</DownloadButton
   >
 </nav>
 <div class="titlebar">
@@ -440,7 +461,7 @@
       {#each range($y) as rn (rn)}
         <div class="row">
           {#each range($x) as cn (cn)}
-            <div class="inputwrapper">
+            <div class="inputwrapper" class:circle={$circles[p.idx(rn, cn)]}>
               <!-- Fix me -->
               <span class="number">
                 {$numbers[p.idx(rn, cn)] || ""}
@@ -588,6 +609,18 @@
     font-size: calc(var(--size) / 2);
   }
 
+  .circle {
+    position: relative;
+  }
+  .circle::before {
+    display: block;
+    content: " ";
+    width: 2em;
+    height: 2em;
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid grey;
+  }
   .possible {
     position: absolute;
     right: 2px;
