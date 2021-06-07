@@ -55,6 +55,8 @@
   }
   .square {
     border: 1px solid black;
+    border-left: none;
+    border-top: none;
     display: inline-flex;
     align-items: center;
     /* font-size: calc(13in / var(--square-width)); */
@@ -63,6 +65,12 @@
     width: calc(var(--base-size) * 15 / var(--square-width));
     height: calc(var(--base-size) * 15 / var(--square-width));
     font-size: calc(var(--base-size) / 2 * 15 / var(--square-width));
+  }
+  .square:first-child {
+    border-left: 1px solid black;
+  }
+  .row:first-child .square {
+    border-top: 1px solid black;
   }
   .square span {
     position: absolute;

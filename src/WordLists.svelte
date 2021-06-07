@@ -6,10 +6,10 @@
   let { acrosses, downs, currentCell } = p;
   export let playMode;
 
-  let currentWords = [];
-  let neighborhoodWords = [];
+  let currentWords: Word[] = [];
+  let neighborhoodWords: Word[] = [];
 
-  function getNeighborhood(currentIndex: {} | null) {
+  function getNeighborhood() {
     if (!$currentCell) {
       currentWords = [];
       neighborhoodWords = [];
@@ -22,6 +22,10 @@
       currentWords.forEach(
         (w) => (currentIndices = [...currentIndices, ...w.indices])
       );
+      currentWords.sort(
+        (a, b) => (a.type == $currentCell.direction && -1) || 1
+      );
+      currentWords = currentWords;
       neighborhoodWords = words.filter((w) => {
         if (currentWords.indexOf(w) > -1) {
           return false;
@@ -32,6 +36,16 @@
           }
         }
       });
+      neighborhoodWords.sort((a: Word, b: Word) => {
+        if (a.type == b.type) {
+          return 0;
+        } else if ($currentCell.direction == a.type) {
+          return 1;
+        } else {
+          return -1;
+        }
+      });
+      neighborhoodWords = neighborhoodWords;
     }
   }
   $: getNeighborhood($currentCell);

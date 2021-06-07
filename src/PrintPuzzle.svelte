@@ -206,7 +206,7 @@
     page-break-before: always;
     page-break-after: always;
     margin: auto;
-    max-width: 7in;
+    max-width: 8in;
     min-height: 8in;
     position: relative;
   }
@@ -214,7 +214,7 @@
     position: absolute;
     pointer-events: none;
     top: -0.5in;
-    left: -0.75in;
+    left: -0.25in;
     width: 8.5in;
     height: 11in;
     border: 3px solid #ababab;
