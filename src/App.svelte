@@ -1,8 +1,12 @@
 <script lang="ts">
-  import Grid from "./Grid.svelte";
+  import Puzzle from "./Puzzle.svelte";
+  import { Mode } from "./types";
   import LetterCounter from "./LetterCounter.svelte";
   import CustomWordList from "./CustomWordList.svelte";
-  let playMode;
+  let mode: Mode = Mode.CONSTRUCT;
+  if (location.search) {
+    mode = Mode.PLAY;
+  }
   let x: number = 15;
   let y: number = 15;
   let letters = [];
@@ -21,17 +25,37 @@
     x
     <input bind:value={y} type="number" min="1" max="20" />
   </div>
-  <nav>
-    <button class="center" on:click={() => (playMode = !playMode)}>
-      {#if playMode}
-        Construct
-      {:else}
-        Play
-      {/if}
+  <nav class="center">
+    <button
+      class:active={mode == Mode.PLAY}
+      on:click={() => (mode = Mode.PLAY)}
+    >
+      Play
     </button>
+    <button
+      class:active={mode == Mode.CONSTRUCT}
+      on:click={() => (mode = Mode.CONSTRUCT)}
+    >
+      Construct
+    </button>
+    <button
+      class:active={mode == Mode.PRINT}
+      on:click={() => (mode = Mode.PRINT)}
+    >
+      Print Puzzle
+    </button>
+    <button
+      class:active={mode == Mode.SOLUTION}
+      on:click={() => (mode = Mode.SOLUTION)}
+    >
+      Print Solution
+    </button>
+    {#if mode == Mode.SOLUTION || mode == Mode.PRINT}
+      <button on:click={() => window.print()}> Print </button>
+    {/if}
   </nav>
-  <Grid xsize={x} ysize={y} {playMode} bind:initialLetters={letters} />
-  {#if !playMode}
+  <Puzzle xsize={x} ysize={y} {mode} bind:initialLetters={letters} />
+  {#if mode == Mode.CONSTRUCT}
     <hr />
     <!-- <h3>Letter Counter</h3> -->
     <!-- <LetterCounter /> -->
@@ -79,6 +103,11 @@
     flex-wrap: wrap;
   }
 
+  nav .active {
+    border-color: transparent;
+    font-weight: bold;
+    background-color: transparent;
+  }
   @media print {
     nav {
       display: none;

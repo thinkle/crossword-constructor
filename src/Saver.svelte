@@ -1,5 +1,6 @@
 <script type="ts">
-  import { getContext } from "svelte";
+  import JSONUrl from "json-url";
+  import { getContext, onMount } from "svelte";
   export let title = "";
   export let author = "";
   let { letters, x, y, clues, circles } = getContext("puzzleContext");
@@ -82,6 +83,26 @@
   function moveToTop(el) {
     document.body.appendChild(el);
   }
+
+  onMount(() => {
+    console.log("Saver mount!");
+    if (!$letters.find((l) => l.match(/[A-Z.]/))) {
+      console.log("No puzzle yet!");
+      if (location.search) {
+        let json = location.search.substr(1);
+        let codec = JSONUrl("lzw");
+        codec.decompress(json).then((result) => {
+          loadPuzzle(result);
+        });
+      } else {
+        let savedPuzzles = getSaved();
+        if (savedPuzzles.length) {
+          console.log("Load last saved...");
+          loadPuzzle(savedPuzzles[savedPuzzles.length - 1]);
+        }
+      }
+    }
+  });
 </script>
 
 <button on:click={() => save()}>Save</button>

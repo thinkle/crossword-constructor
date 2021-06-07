@@ -1,4 +1,7 @@
 <script lang="ts">
+  import JsonUrl from "json-url";
+  import { Mode } from "./types";
+  export let mode = Mode.CONSTRUCT;
   import { tick, setContext, getContext } from "svelte";
   import { writable } from "svelte/store";
   import { makePuzzleStore } from "./puzzleStore";
@@ -9,7 +12,10 @@
   import DownloadButton from "./DownloadButton.svelte";
   import Saver from "./Saver.svelte";
   import { createPuzzleFile } from "./acrosslite";
-  export let playMode;
+  import PrintSubmission from "./PrintSubmission.svelte";
+  import PrintPuzzle from "./PrintPuzzle.svelte";
+  let playMode;
+  $: playMode = mode == Mode.PLAY;
   export let xsize: number;
   export let ysize: number;
   export let initialLetters = [];
@@ -395,23 +401,49 @@
       zoomPercentage = 1;
     }
   }
+
+  let compressed;
+  $: makeCompressed({
+    letters: $letters,
+    title,
+    author,
+    circles: $circles,
+    x: $x,
+    y: $y,
+    clues: $clues,
+  });
+
+  function makeCompressed(puzzle) {
+    let codec = JsonUrl("lzw");
+    codec.compress(puzzle).then((result) => {
+      compressed = result;
+    });
+  }
 </script>
 
-<nav>
-  {#if !playMode}
-    <button on:click={() => ($letters = $letters.map(() => "?"))}
-      >Clear All</button
-    >
-    <button
-      on:click={() =>
-        ($letters = $letters.map((l) => (l == "." && ".") || "?"))}
-      >Clear Letters</button
-    >
-    <input type="checkbox" bind:checked={lockMode} /> Lock black
-    <input type="checkbox" bind:checked={mirrorMode} />Mirror mode
-    <input type="checkbox" bind:checked={leftRightSymmetryMode} />Left/Right
-    <button on:click={p.updateMatches}>Update</button>
-    <button on:click={() => solvePuzzle(p)}>Solve</button>
+{#if mode == Mode.PLAY || mode == Mode.CONSTRUCT}
+  <nav>
+    {#if mode == Mode.CONSTRUCT}
+      <button on:click={() => ($letters = $letters.map(() => "?"))}
+        >Clear All</button
+      >
+      <button
+        on:click={() =>
+          ($letters = $letters.map((l) => (l == "." && ".") || "?"))}
+        >Clear Letters</button
+      >
+      <input type="checkbox" bind:checked={lockMode} /> Lock black
+      <input type="checkbox" bind:checked={mirrorMode} />Mirror mode
+      <input type="checkbox" bind:checked={leftRightSymmetryMode} />Left/Right
+      <button on:click={p.updateMatches}>Update</button>
+      <button on:click={() => solvePuzzle(p)}>Solve</button>
+      Min word:
+      <input bind:value={$scoreCutoff} type="number" min="0" max="50" />
+    {/if}
+    <Saver bind:title bind:author />
+    {#if compressed}
+      <a href={`?${compressed}`}>Share</a>
+    {/if}
     <button
       on:click={() => {
         zoomPercentage += 0.05;
@@ -422,96 +454,99 @@
         zoomPercentage -= 0.05;
       }}>-</button
     >
-    Min word: <input bind:value={$scoreCutoff} type="number" min="0" max="50" />
-    <Saver bind:title bind:author />
-  {/if}
-  <DownloadButton
-    content={createPuzzleFile(
-      $letters,
-      $x,
-      $y,
-      $clues,
-      title,
-      author,
-      $circles
-    )}
-    filename={`${
-      title || new Date().toLocaleDateString().replace(/\//g, "-")
-    }.txt`}>Download Acrosslite</DownloadButton
-  >
-</nav>
-<div class="titlebar">
-  {#if playMode}
-    <h3>{title || "Untitled"}</h3>
-    by<span class="author">{author}</span>
-  {:else}
-    <input bind:value={title} placeholder="Title" class="title" /> by
-    <input placeholder="Author" class="author" bind:value={author} />
-  {/if}
-</div>
-<div
-  class="sbs"
-  bind:clientWidth={fullWidth}
-  style="--grid-width:{fullWidth}px;
+
+    <DownloadButton
+      content={createPuzzleFile(
+        $letters,
+        $x,
+        $y,
+        $clues,
+        title,
+        author,
+        $circles
+      )}
+      filename={`${
+        title || new Date().toLocaleDateString().replace(/\//g, "-")
+      }.txt`}>Download Acrosslite</DownloadButton
+    >
+  </nav>
+  <div class="titlebar">
+    {#if playMode}
+      <h3>{title || "Untitled"}</h3>
+      by<span class="author">{author}</span>
+    {:else}
+      <input bind:value={title} placeholder="Title" class="title" /> by
+      <input placeholder="Author" class="author" bind:value={author} />
+    {/if}
+  </div>
+  <div
+    class="sbs"
+    bind:clientWidth={fullWidth}
+    style="--grid-width:{fullWidth}px;
   --grid-max:{gridLetterSize};
   --size:{(fullWidth * zoomPercentage) / (gridLetterSize * 3)}px"
->
-  {#each [{ $x, $y }] as newGrid}
-    <section class={`grid size-${size}`}>
-      {#each range($y) as rn (rn)}
-        <div class="row">
-          {#each range($x) as cn (cn)}
-            <div class="inputwrapper" class:circle={$circles[p.idx(rn, cn)]}>
-              <!-- Fix me -->
-              <span class="number">
-                {$numbers[p.idx(rn, cn)] || ""}
-              </span>
-              {#if playMode}
-                <input
-                  class="square"
-                  class:solid={$letters[p.idx(rn, cn)] == "."}
-                  class:active={activeWord?.indices?.indexOf(p.idx(rn, cn)) >
-                    -1}
-                  on:focus={onFocus}
-                  on:keydown={onKeyDown}
-                  item={p.idx(rn, cn)}
-                  bind:value={$answers[p.idx(rn, cn)]}
-                />
-              {:else}
-                <input
-                  class="square"
-                  class:solid={$letters[p.idx(rn, cn)] == "."}
-                  class:active={activeWord?.indices?.indexOf(p.idx(rn, cn)) >
-                    -1}
-                  class:missing={$letters[p.idx(rn, cn)] == "?"}
-                  class:short={getAcrossWord(p.idx(rn, cn), $acrosses)?.indices
-                    ?.length < 3 ||
-                    getDownWord(p.idx(rn, cn), $downs)?.indices?.length < 3}
-                  on:focus={onFocus}
-                  on:keydown={onKeyDown}
-                  item={p.idx(rn, cn)}
-                  bind:value={$letters[p.idx(rn, cn)]}
-                />
-                {#if $letters[p.idx(rn, cn)] == "?" && $possibleLetters[p.idx(rn, cn)]?.across}
-                  <span class="possible">
-                    {#each [...$possibleLetters[p.idx(rn, cn)].across].filter( (l) => $possibleLetters[p.idx(rn, cn)].down?.has(l) ) as letter}
-                      {letter}
-                    {:else}
-                      <span class="warning">No match </span>
-                    {/each}
-                  </span>
+  >
+    {#each [{ $x, $y }] as newGrid}
+      <section class={`grid size-${size}`}>
+        {#each range($y) as rn (rn)}
+          <div class="row">
+            {#each range($x) as cn (cn)}
+              <div class="inputwrapper" class:circle={$circles[p.idx(rn, cn)]}>
+                <!-- Fix me -->
+                <span class="number">
+                  {$numbers[p.idx(rn, cn)] || ""}
+                </span>
+                {#if playMode}
+                  <input
+                    class="square"
+                    class:solid={$letters[p.idx(rn, cn)] == "."}
+                    class:active={activeWord?.indices?.indexOf(p.idx(rn, cn)) >
+                      -1}
+                    on:focus={onFocus}
+                    on:keydown={onKeyDown}
+                    item={p.idx(rn, cn)}
+                    bind:value={$answers[p.idx(rn, cn)]}
+                  />
+                {:else}
+                  <input
+                    class="square"
+                    class:solid={$letters[p.idx(rn, cn)] == "."}
+                    class:active={activeWord?.indices?.indexOf(p.idx(rn, cn)) >
+                      -1}
+                    class:missing={$letters[p.idx(rn, cn)] == "?"}
+                    class:short={getAcrossWord(p.idx(rn, cn), $acrosses)
+                      ?.indices?.length < 3 ||
+                      getDownWord(p.idx(rn, cn), $downs)?.indices?.length < 3}
+                    on:focus={onFocus}
+                    on:keydown={onKeyDown}
+                    item={p.idx(rn, cn)}
+                    bind:value={$letters[p.idx(rn, cn)]}
+                  />
+                  {#if $letters[p.idx(rn, cn)] == "?" && $possibleLetters[p.idx(rn, cn)]?.across}
+                    <span class="possible">
+                      {#each [...$possibleLetters[p.idx(rn, cn)].across].filter( (l) => $possibleLetters[p.idx(rn, cn)].down?.has(l) ) as letter}
+                        {letter}
+                      {:else}
+                        <span class="warning">No match </span>
+                      {/each}
+                    </span>
+                  {/if}
                 {/if}
-              {/if}
-            </div>
-          {/each}
-        </div>
-      {/each}
+              </div>
+            {/each}
+          </div>
+        {/each}
+      </section>
+    {/each}
+    <section class="words">
+      <WordLists {playMode} />
     </section>
-  {/each}
-  <section class="words">
-    <WordLists {playMode} />
-  </section>
-</div>
+  </div>
+{:else if mode == Mode.SOLUTION}
+  <PrintSubmission {author} {title} />
+{:else if mode == Mode.PRINT}
+  <PrintPuzzle {author} {title} />
+{/if}
 
 <style>
   .grid {
