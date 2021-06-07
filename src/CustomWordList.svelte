@@ -54,7 +54,7 @@
   }}
 />
 <ul>
-  {#if scoredList.length}
+  {#if scoredList && scoredList.length}
     <button on:click={() => (showList = !showList)}>
       {#if showList}Hide{:else}Show{/if}
       {scoredList.length} items currently on list
