@@ -54,13 +54,19 @@
 
 {#if currentWords.length && showCurrent}
   <div>
-    <h3>Nearby <button on:click={() => (showCurrent = false)}>hide</button></h3>
+    <h3>
+      Nearby <button class="button" on:click={() => (showCurrent = false)}
+        ><i class="fa fa-angle-up" aria-hidden="true" /></button
+      >
+    </h3>
     <Words {playMode} words={currentWords} />
     <h3>Neighborhood</h3>
     <Words {playMode} words={neighborhoodWords} />
   </div>
 {:else if !showCurrent}
-  <button on:click={() => (showCurrent = true)}>Show nearby</button>
+  <button class="button" on:click={() => (showCurrent = true)}
+    ><i class="fa fa-angle-down" aria-hidden="true" /></button
+  >
 {/if}
 <div>
   <h3>Acrosses</h3>

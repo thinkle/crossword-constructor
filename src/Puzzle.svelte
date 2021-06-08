@@ -256,6 +256,9 @@
   function setLetter(idx, val) {
     if (playMode) {
       $answers[idx] = val;
+      if (val == "?") {
+        $answers[idx] = "";
+      }
     } else {
       $letters[idx] = val;
     }
@@ -442,7 +445,7 @@
     {/if}
     <Saver bind:title bind:author />
     {#if compressed}
-      <a href={`?${compressed}`}>Share</a>
+      <a target="_blank" href={`?${compressed}`}>Share</a>
     {/if}
     <button
       on:click={() => {
@@ -591,8 +594,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex-grow: 1;
-    flex-basis: 80%;
     max-height: 100vh;
     overflow-y: scroll;
   }
@@ -600,6 +601,7 @@
     flex-grow: 1;
     flex-shrink: 1;
     flex-basis: 20%;
+    margin-left: 1em;
     align-items: start;
   }
 
@@ -612,6 +614,17 @@
     width: 2em;
     height: 2em;
     margin: 0;
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+    border-left: none;
+    border-top: none;
+    border-radius: 0;
+  }
+  .inputwrapper:first-child input.square {
+    border-left: 1px solid black;
+  }
+  .row:first-child input.square {
+    border-top: 1px solid black;
   }
 
   input.active {
@@ -680,6 +693,13 @@
   }
   .titlebar {
     text-align: center;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+  .titlebar > * {
+    margin-right: 1em;
   }
   .author {
     font-style: italic;

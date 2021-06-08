@@ -52,8 +52,6 @@
           </tr>
         {/each}
       </table>
-    </div>
-    <div class="page">
       <h2>Down</h2>
       <table>
         {#each $downs as down}

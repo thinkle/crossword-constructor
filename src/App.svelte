@@ -19,13 +19,8 @@
 </script>
 
 <main>
-  <h1 class="center">Tom's Puzzle Tool</h1>
-  <div class="center">
-    <input bind:value={x} type="number" min="1" max="20" />
-    x
-    <input bind:value={y} type="number" min="1" max="20" />
-  </div>
-  <nav class="center">
+  <h1 style="float:right">Tom's Puzzle Tool</h1>
+  <nav class="center tabs">
     <button
       class:active={mode == Mode.PLAY}
       on:click={() => (mode = Mode.PLAY)}
@@ -51,9 +46,18 @@
       Print Solution
     </button>
     {#if mode == Mode.SOLUTION || mode == Mode.PRINT}
-      <button on:click={() => window.print()}> Print </button>
+      <button class="button" on:click={() => window.print()}>
+        <i class="fa fa-print" aria-hidden="true" />
+      </button>
     {/if}
   </nav>
+  {#if mode == Mode.CONSTRUCT}
+    <div class="center">
+      <input bind:value={x} type="number" min="1" max="20" />
+      x
+      <input bind:value={y} type="number" min="1" max="20" />
+    </div>
+  {/if}
   <Puzzle xsize={x} ysize={y} {mode} bind:initialLetters={letters} />
   {#if mode == Mode.CONSTRUCT}
     <hr />
@@ -89,6 +93,7 @@
     text-transform: uppercase;
     font-size: 1.2em;
     font-weight: 100;
+    float: right;
   }
 
   @media (min-width: 640px) {
@@ -106,13 +111,33 @@
   nav .active {
     border-color: transparent;
     font-weight: bold;
-    background-color: transparent;
+    background-color: #f1bebe;
+    border-bottom: 1px solid #8f0202;
+  }
+  .tabs button {
+    border-color: transparent;
+    background-color: #e4e4e4;
+    border-radius: 15px 15px 0 0;
+    border-bottom: 1px solid #917474;
+    cursor: pointer;
+  }
+  button.button {
+    border-radius: 15px 15px 15px 15px;
+    background-color: white;
+    border-bottom: none;
+  }
+  button.button:hover {
+    border: 1px solid #8f0202;
+    transition: 200ms;
   }
   @media print {
     nav {
       display: none;
     }
     .center {
+      display: none;
+    }
+    h1 {
       display: none;
     }
   }
