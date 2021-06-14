@@ -6,7 +6,7 @@
   import { writable } from "svelte/store";
   import { makePuzzleStore } from "./puzzleStore";
   import type { PuzzleContext } from "./puzzleStore";
-  import { solvePuzzle } from "./solver";
+  import { solvePuzzle, cancelSolve } from "./solver";
   import type { Word } from "./puzzleStore";
   import WordLists from "./WordLists.svelte";
   import DownloadButton from "./DownloadButton.svelte";
@@ -40,6 +40,7 @@
     currentCell,
     autoMode,
     scoreCutoff,
+    autofill,
   } = p;
 
   let answers = writable([]);
@@ -427,8 +428,13 @@
 {#if mode == Mode.PLAY || mode == Mode.CONSTRUCT}
   <nav>
     {#if mode == Mode.CONSTRUCT}
-      <button on:click={() => ($letters = $letters.map(() => "?"))}
-        >Clear All</button
+      <button
+        on:click={() => {
+          $letters = $letters.map(() => "?");
+          $circles = [];
+          $clues.across = $clues.across.map(() => "");
+          $clues.down = $clues.down.map(() => "");
+        }}>Clear All</button
       >
       <button
         on:click={() =>
@@ -440,6 +446,12 @@
       <input type="checkbox" bind:checked={leftRightSymmetryMode} />Left/Right
       <button on:click={p.updateMatches}>Update</button>
       <button on:click={() => solvePuzzle(p)}>Solve</button>
+      {#if $autofill.length}<button
+          on:click={() => {
+            cancelSolve();
+            $autofill = [];
+          }}>Cancel</button
+        >{/if}
       Min word:
       <input bind:value={$scoreCutoff} type="number" min="0" max="50" />
     {/if}
@@ -533,6 +545,11 @@
                         <span class="warning">No match </span>
                       {/each}
                     </span>
+                    {#if $autofill[p.idx(rn, cn)]}
+                      <span class="autofill">
+                        {$autofill[p.idx(rn, cn)]}
+                      </span>
+                    {/if}
                   {/if}
                 {/if}
               </div>
@@ -604,7 +621,9 @@
     margin-left: 1em;
     align-items: start;
   }
-
+  section.grid {
+    flex-basis: 75%;
+  }
   .row {
     display: flex;
     flex-direction: row;
@@ -668,6 +687,7 @@
     position: absolute;
     border-radius: 50%;
     border: 1px solid grey;
+    pointer-events: none;
   }
   .possible {
     position: absolute;
@@ -704,7 +724,22 @@
   .author {
     font-style: italic;
   }
-
+  .autofill {
+    font-weight: bold;
+    font-size: var(--size);
+    color: purple;
+    position: absolute;
+    z-index: 3;
+    pointer-events: none;
+    width: 2em;
+    height: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    top: 0;
+    left: 0;
+  }
   @media print {
     nav {
       display: none;

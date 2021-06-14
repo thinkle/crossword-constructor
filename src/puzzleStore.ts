@@ -26,6 +26,7 @@ export interface PuzzleContext {
   currentCell: Writable<{ index: number; direction: "across" | "down" } | null>;
   autoMode: Writable<boolean>;
   scoreCutoff: Writable<number>;
+  autofill: Writable<string[]>;
 }
 
 export function makePuzzleStore(
@@ -345,6 +346,7 @@ export function makePuzzleStore(
 
   return {
     letters,
+    autofill: writable([]),
     numbers,
     circles,
     clues,

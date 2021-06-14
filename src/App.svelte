@@ -20,33 +20,37 @@
 
 <main>
   <h1 style="float:right">Tom's Puzzle Tool</h1>
-  <nav class="center tabs">
+  <nav class="center">
     <button
+      class="tab"
       class:active={mode == Mode.PLAY}
       on:click={() => (mode = Mode.PLAY)}
     >
       Play
     </button>
     <button
+      class="tab"
       class:active={mode == Mode.CONSTRUCT}
       on:click={() => (mode = Mode.CONSTRUCT)}
     >
       Construct
     </button>
     <button
+      class="tab"
       class:active={mode == Mode.PRINT}
       on:click={() => (mode = Mode.PRINT)}
     >
       Print Puzzle
     </button>
     <button
+      class="tab"
       class:active={mode == Mode.SOLUTION}
       on:click={() => (mode = Mode.SOLUTION)}
     >
       Print Solution
     </button>
     {#if mode == Mode.SOLUTION || mode == Mode.PRINT}
-      <button class="button" on:click={() => window.print()}>
+      <button class="button min" on:click={() => window.print()}>
         <i class="fa fa-print" aria-hidden="true" />
       </button>
     {/if}
@@ -111,25 +115,17 @@
   nav .active {
     border-color: transparent;
     font-weight: bold;
-    background-color: #f1bebe;
+    background-color: #3a2020;
     border-bottom: 1px solid #8f0202;
   }
-  .tabs button {
+  button.tab {
     border-color: transparent;
     background-color: #e4e4e4;
     border-radius: 15px 15px 0 0;
     border-bottom: 1px solid #917474;
     cursor: pointer;
   }
-  button.button {
-    border-radius: 15px 15px 15px 15px;
-    background-color: white;
-    border-bottom: none;
-  }
-  button.button:hover {
-    border: 1px solid #8f0202;
-    transition: 200ms;
-  }
+
   @media print {
     nav {
       display: none;

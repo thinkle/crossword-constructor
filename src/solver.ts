@@ -8,7 +8,7 @@
 import { get } from "svelte/store";
 import { makePuzzleStore } from "./puzzleStore";
 import type { PuzzleContext } from "./puzzleStore";
-
+import {words,scores} from './wordlist'
 export function getPossible(possible: {
   across: Set<string>;
   down: Set<string>;
@@ -25,10 +25,39 @@ export function getPossible(possible: {
   return r;
 }
 
+
+let worker
+
+export function cancelSolve () {
+  if (worker) {
+    worker.terminate();
+  }
+}
 export function solvePuzzle(ps: PuzzleContext) {
+  cancelSolve();
   console.log("Solve!", ps);
+  console.log("Launching test worker!");
+  worker = new Worker("/build/worker.js");
+  let cutoff = get(ps.scoreCutoff)
+  worker.postMessage({ 
+    acrosses : get(ps.acrosses);
+    downs : get(ps.downs),
+    letters: get(ps.letters),
+    dictionary : words.filter((w)=>scores[w]>=cutoff),
+    scores
+   });
+  worker.onmessage = (ev) => {
+    console.log("Got message from worker!", ev);
+    if (!ev.data.letters) {
+      console.log('FAILED TO SOLVE');
+      ps.autofill.set([]);
+    } else {
+      console.log('Set letters to ',ev.data.letters)
+      ps.autofill.set(ev.data.letters);
+    }
+  };
   // First, put in every letter we need to...
-  let changes;
+  /* let changes;
   do {
     console.log("Fill where we can by letters...");
     changes = fillWhereOneOption(ps);
@@ -36,7 +65,7 @@ export function solvePuzzle(ps: PuzzleContext) {
   // Next up... fill by words...
   let $acrosses = get(ps.acrosses);
   let $downs = get(ps.downs);
-  let $matches = get(ps.matches);
+  let $matches = get(ps.matches); */  
 }
 
 function fillWhereOneOption(ps: PuzzleContext) {
