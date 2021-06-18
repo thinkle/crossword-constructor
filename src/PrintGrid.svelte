@@ -98,4 +98,18 @@
     margin-top: 0.25pt;
     margin-bottom: 0.25pt;
   }
+
+  .circle {
+    position: relative;
+  }
+  .circle::before {
+    display: block;
+    content: " ";
+    width: calc(var(--base-size) * 15 / var(--square-width));
+    height: calc(var(--base-size) * 15 / var(--square-width));
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid grey;
+    pointer-events: none;
+  }
 </style>

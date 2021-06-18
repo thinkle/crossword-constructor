@@ -545,7 +545,7 @@
                         <span class="warning">No match </span>
                       {/each}
                     </span>
-                    {#if $autofill[p.idx(rn, cn)]}
+                    {#if $autofill[p.idx(rn, cn)] && $autofill[p.idx(rn, cn)] != "?"}
                       <span class="autofill">
                         {$autofill[p.idx(rn, cn)]}
                       </span>
