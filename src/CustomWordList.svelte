@@ -1,33 +1,16 @@
 <script type="ts">
   import { words, scores, customListName, importWordList } from "./wordlist";
+  import {
+    loadList,
+    addNextWord,
+    scoredList,
+    nextWord,
+    activate,
+    saveList,
+  } from "./customWordlistStore";
   import BulkWordlist from "./BulkWordlist.svelte";
-  let scoredList: [string, number][] = [];
-  let nextWord: [string, number] = ["", 50];
-  function loadList() {
-    let customListText = localStorage.getItem(customListName);
-    scoredList =
-      customListText &&
-      customListText
-        .split("\n")
-        .map((l) => [l.split(";")[0], Number(l.split(";")[1])]);
-    nextWord = ["", 50];
-  }
-  loadList();
-  function addWord() {
-    scoredList = [...scoredList, nextWord];
-    nextWord = ["", 50];
-  }
-  function getListAsString() {
-    return scoredList.map((l) => l.join(";")).join("\n");
-  }
 
-  function saveList() {
-    localStorage.setItem(customListName, getListAsString());
-  }
-  function activate() {
-    importWordList(getListAsString());
-  }
-  $: nextWord[0] = nextWord[0].toUpperCase().replace(/[^A-Za-z]/g, "");
+  $: $nextWord[0] = $nextWord[0].toUpperCase().replace(/[^A-Za-z]/g, "");
   let showList: boolean = false;
   let bulkList = [];
   let bulkWLText = "";
@@ -42,7 +25,7 @@
 <h4>Bulk Add</h4>
 <button
   on:click={() => {
-    scoredList = [...scoredList, ...bulkList];
+    $scoredList = [...$scoredList, ...bulkList];
     bulkWLText = "";
   }}>Add bulk list</button
 >
@@ -54,14 +37,14 @@
   }}
 />
 <ul>
-  {#if scoredList && scoredList.length}
+  {#if $scoredList && $scoredList.length}
     <button on:click={() => (showList = !showList)}>
       {#if showList}Hide{:else}Show{/if}
-      {scoredList.length} items currently on list
+      {$scoredList.length} items currently on list
     </button>
   {/if}
   {#if showList}
-    {#each scoredList as item, i}
+    {#each $scoredList as item, i}
       <li>
         <label>Word: <input bind:value={item[0]} /></label>
         <label
@@ -72,16 +55,16 @@
         </label>
         <button
           on:click={() =>
-            (scoredList = [
-              ...scoredList.slice(0, i),
-              ...scoredList.slice(i + 1),
+            ($scoredList = [
+              ...$scoredList.slice(0, i),
+              ...$scoredList.slice(i + 1),
             ])}>-</button
         >
       </li>
     {/each}
   {/if}
   <li>
-    <form on:submit|preventDefault={addWord}>
+    <form on:submit|preventDefault={addNextWord}>
       <label>Word: <input bind:value={nextWord[0]} /></label>
       <label
         >Score:

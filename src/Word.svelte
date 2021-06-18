@@ -1,4 +1,6 @@
 <script type="ts">
+  import WordScore from "./WordScore.svelte";
+
   import { getPossible } from "./solver";
   import type { Word } from "./puzzleStore";
   import { tick, onDestroy, getContext } from "svelte";
@@ -10,13 +12,8 @@
   let isWord = false;
   let forceShow = false;
   let lastWord;
-  let {
-    matches,
-    clues,
-    currentCell,
-    possibleLetters,
-    wordMatches,
-  } = getContext("puzzleContext");
+  let { matches, clues, currentCell, possibleLetters, wordMatches } =
+    getContext("puzzleContext");
   let myMatches = [];
 
   $: myMatches = $matches[word.word];
@@ -58,13 +55,7 @@
         >{word.word}</button
       >
       {#if !needsMatch}
-        {#if isWord}
-          <span class={`score score-${Math.round(scores[word.word] / 10)}`}
-            >{scores[word.word]}</span
-          >
-        {:else}
-          <span class="score score-0">Not on list</span>
-        {/if}
+        <WordScore word={word.word} />
       {/if}
     </span>
     {#if needsMatch}
@@ -76,9 +67,7 @@
           {#each myMatches || [] as match}
             <li>
               {match}
-              <span class={`score score-${Math.round(scores[match] / 10)}`}
-                >{scores[match]}</span
-              >
+              <WordScore word={match} />
             </li>
           {:else}
             No matches
@@ -132,33 +121,5 @@
   span {
     font-size: small;
     font-family: monospace;
-  }
-
-  .score {
-    font-size: small;
-  }
-  .score-5 {
-    color: black;
-    font-weight: bold;
-  }
-  .score-4 {
-    color: #111;
-    font-weight: 400;
-  }
-  .score-3 {
-    color: #333;
-    font-weight: 400;
-  }
-  .score-2 {
-    color: #555;
-    font-weight: 300;
-  }
-  .score-1 {
-    color: #222;
-    font-weight: 200;
-  }
-  .score-0 {
-    color: #aaa;
-    font-weight: 100;
   }
 </style>
