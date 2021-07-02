@@ -40,6 +40,7 @@ export function solvePuzzle(ps: PuzzleContext) {
   worker = new Worker("/build/worker.js");
   let cutoff = get(ps.scoreCutoff)
   worker.postMessage({ 
+    mode : 'solve',
     acrosses : get(ps.acrosses);
     downs : get(ps.downs),
     letters: get(ps.letters),
@@ -55,17 +56,7 @@ export function solvePuzzle(ps: PuzzleContext) {
       console.log('Set letters to ',ev.data.letters)
       ps.autofill.set(ev.data.letters);
     }
-  };
-  // First, put in every letter we need to...
-  /* let changes;
-  do {
-    console.log("Fill where we can by letters...");
-    changes = fillWhereOneOption(ps);
-  } while (changes > 0);
-  // Next up... fill by words...
-  let $acrosses = get(ps.acrosses);
-  let $downs = get(ps.downs);
-  let $matches = get(ps.matches); */  
+  };  
 }
 
 function fillWhereOneOption(ps: PuzzleContext) {
@@ -90,7 +81,3 @@ function fillWhereOneOption(ps: PuzzleContext) {
   ps.letters.set($letters);
   return changes;
 }
-
-/* Create a new puzzleContext for the chunk isolated by index
-(i.e. only do one corner/section at a time) */
-function findChunkAt(index: number, puzzleStore: PuzzleContext) {}

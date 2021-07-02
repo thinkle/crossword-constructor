@@ -12,7 +12,6 @@
   }
 
   function saveScore() {
-    console.log("FIXME!", newScore);
     addWord(word, newScore);
     scores[word] = newScore; // react!
     editMode = false;

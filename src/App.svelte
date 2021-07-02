@@ -20,7 +20,7 @@
 
 <main>
   <h1 style="float:right">Tom's Puzzle Tool</h1>
-  <nav class="center">
+  <nav class="center tabs top">
     <button
       class="tab"
       class:active={mode == Mode.PLAY}
@@ -112,6 +112,12 @@
     flex-wrap: wrap;
   }
 
+  .top {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 3;
+  }
   nav .active {
     border-color: transparent;
     font-weight: bold;

@@ -48,7 +48,7 @@
   $: if (lockMode) {
     $autoMode = true;
   } else {
-    $autoMode = false;
+    $autoMode = false; 
   }
 
   $: $x = xsize;
@@ -426,7 +426,7 @@
 </script>
 
 {#if mode == Mode.PLAY || mode == Mode.CONSTRUCT}
-  <nav>
+  <nav class="top-2">
     {#if mode == Mode.CONSTRUCT}
       <button
         on:click={() => {
@@ -593,6 +593,13 @@
     font-size: 1rem;
     align-items: center;
     flex-wrap: wrap;
+  }
+
+  .top-2 {
+    position: sticky;
+    top: 32px;
+    background-color: white;
+    z-index: 3;
   }
 
   nav > :global(*) {

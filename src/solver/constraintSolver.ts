@@ -1,44 +1,12 @@
 // Simple constraint solver
+import { findMatches } from "./matcher";
+
 type WordIndices = number[] & { word?: Word };
 type Word = {
   indices: WordIndices;
   word: string;
   matches?: string[];
 };
-let cache = {};
-
-/* Needed if we want to change dictionaries... */
-export function clearWordMatchCache() {
-  cache = {};
-}
-
-function findMatches(
-  word: string,
-  dictionary: string[],
-  excludes: string[] = []
-) {
-  /* THIS IS NOT WORKING AS EXPECTED - WHAT'S UP HERE??? */
-  if (!cache[word]) {
-    cache[word] = dictionary.filter(isMatch);
-  }
-  let results = cache[word];
-  results = results.filter((w) => excludes.indexOf(w) == -1);
-  return results;
-
-  function isMatch(dword) {
-    if (dword.length == word.length) {
-      for (let i = 0; i < word.length; i++) {
-        let l = word[i];
-        if (l && l != "?" && l != dword[i]) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
-}
 
 export function solveForConstraint(
   words: WordIndices[],

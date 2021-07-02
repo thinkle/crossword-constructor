@@ -1,7 +1,7 @@
 import { writable, get, derived } from "svelte/store";
 import type { Writable, Readable } from "svelte/store";
 import { tick } from "svelte";
-import { findMatches, scores } from "./findMatches";
+import { getGridHints, findMatches, scores } from "./findMatches";
 import { getPossible } from "./solver";
 export interface Word {
   word: string;
@@ -172,6 +172,21 @@ export function makePuzzleStore(
     let $acrosses = get(acrosses);
     let $downs = get(downs);
     let $scoreCutoff = get(scoreCutoff);
+    getGridHints($acrosses, $downs, $scoreCutoff,
+      (matches)=>{
+        wordMatches.set({
+          across: matches.across,
+          down: matches.down,
+        });
+      })
+      );
+    
+  }
+
+  function updateMatchesObsolete() {
+    let $acrosses = get(acrosses);
+    let $downs = get(downs);
+    let $scoreCutoff = get(scoreCutoff);
     wordMatches.set({ across: [], down: [] });
     matches.update(($matches) => {
       [$acrosses, $downs].forEach((wordList) => {
@@ -216,6 +231,8 @@ export function makePuzzleStore(
     console.log("Set autoUpdate to ", am);
     autoUpdate = am;
   });
+
+  // create updater worker...
 
   letters.subscribe(($letters) => {
     wordMatches.set({ across: [], down: [] });
