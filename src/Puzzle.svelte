@@ -48,7 +48,7 @@
   $: if (lockMode) {
     $autoMode = true;
   } else {
-    $autoMode = false; 
+    $autoMode = false;
   }
 
   $: $x = xsize;
@@ -397,14 +397,6 @@
 
   let zoomPercentage = 1;
   let originalClientWidth = 0;
-  $: if (fullWidth != originalClientWidth) {
-    let roomLeft = originalClientWidth - 200;
-    if (roomLeft > 0) {
-      zoomPercentage = roomLeft / fullWidth;
-    } else {
-      zoomPercentage = 1;
-    }
-  }
 
   let compressed;
   $: makeCompressed({
@@ -423,7 +415,20 @@
       compressed = result;
     });
   }
+  let windowHeight;
+  let windowWidth;
+  let gridWidth = 300;
+  const rightSize = 150;
+  $: if (windowWidth - rightSize < windowHeight) {
+    gridWidth = windowWidth - rightSize;
+    console.log("Limit to width", gridWidth);
+  } else {
+    gridWidth = windowHeight;
+    console.log("Limit to height", gridWidth);
+  }
 </script>
+
+<svelte:window bind:innerHeight={windowHeight} bind:innerWidth={windowWidth} />
 
 {#if mode == Mode.PLAY || mode == Mode.CONSTRUCT}
   <nav class="top-2">
@@ -466,6 +471,13 @@
     >
     <button
       on:click={() => {
+        zoomPercentage = 1;
+      }}
+    >
+      Fit
+    </button>
+    <button
+      on:click={() => {
         zoomPercentage -= 0.05;
       }}>-</button
     >
@@ -497,9 +509,9 @@
   <div
     class="sbs"
     bind:clientWidth={fullWidth}
-    style="--grid-width:{fullWidth}px;
+    style="--grid-width:{gridWidth}px;
   --grid-max:{gridLetterSize};
-  --size:{(fullWidth * zoomPercentage) / (gridLetterSize * 3)}px"
+  --size:{(gridWidth * zoomPercentage) / (gridLetterSize * 3)}px"
   >
     {#each [{ $x, $y }] as newGrid}
       <section class={`grid size-${size}`}>
