@@ -36,8 +36,7 @@ export function cancelSolve () {
 }
 export function solvePuzzle(ps: PuzzleContext) {
   cancelSolve();
-  console.log("Solve!", ps);
-  console.log("Launching test worker!");
+  console.log("Solve!", ps);  
   worker = new Worker("/build/worker.js");
   let cutoff = get(ps.scoreCutoff)
   worker.postMessage({ 
@@ -49,13 +48,10 @@ export function solvePuzzle(ps: PuzzleContext) {
     scores,
     filters : get(filters),
    });
-  worker.onmessage = (ev) => {
-    console.log("Got message from worker!", ev);
-    if (!ev.data.letters) {
-      console.log('FAILED TO SOLVE');
+  worker.onmessage = (ev) => {    
+    if (!ev.data.letters) {      
       ps.autofill.set([]);
-    } else {
-      console.log('Set letters to ',ev.data.letters)
+    } else {      
       ps.autofill.set(ev.data.letters);
     }
   };  
@@ -67,10 +63,8 @@ function fillWhereOneOption(ps: PuzzleContext) {
   let changes = 0;
   for (let i = 0; i < $letters.length; i++) {
     if ($letters[i] == "?") {
-      let lettersForSquare = getPossible($possibleLetters[i]);
-      console.log("Check out", i, lettersForSquare);
-      if (lettersForSquare.length == 0) {
-        console.log("No letters for ", i, $letters[i]);
+      let lettersForSquare = getPossible($possibleLetters[i]);      
+      if (lettersForSquare.length == 0) {        
         return -1;
       } else if (lettersForSquare.length == 1) {
         $letters[i] = lettersForSquare[0];

@@ -84,10 +84,8 @@
     document.body.appendChild(el);
   }
 
-  onMount(() => {
-    console.log("Saver mount!");
-    if (!$letters.find((l) => l.match(/[A-Z.]/))) {
-      console.log("No puzzle yet!");
+  onMount(() => {    
+    if (!$letters.find((l) => l.match(/[A-Z.]/))) {      
       if (location.search) {
         let json = location.search.substr(1);
         let codec = JSONUrl("lzw");

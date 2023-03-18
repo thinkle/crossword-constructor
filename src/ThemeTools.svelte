@@ -55,8 +55,7 @@
   fun = `function (words) {
     let possibleMatches = words.filter(
       (w)=>(w.indexOf("S")>-1)
-    )
-    console.log('Working with a subset of ',possibleMatches.length,'words');
+    )    
     return function (word) {      
       if (word.indexOf("S") == -1) {
         return false;
@@ -84,10 +83,7 @@
           wi += 1;                                
         }
         return true;
-      });
-      if (matches.length) {
-        console.log("Match!", word, matches);
-      }
+      }); 
       return matches.length;
     };
   }`;
@@ -99,13 +95,11 @@
         // ignore if it ends with an s
         if (word[word.length-1] != 'S') {                    
           let otherWord = word.replace(/S/,'');          
-          if (words.indexOf(otherWord)>-1) {
-            console.log(word,otherWord)
+          if (words.indexOf(otherWord)>-1) {            
             // Now if we do have a match, lets see if its just
             // an internal word that ends with an "s"...
             let firstParticle = word.split('S')[0];
-            if (firstParticle.length > 2 && words.indexOf(firstParticle) > -1) {
-              console.log('IGNORE ',word,'because',firstParticle);
+            if (firstParticle.length > 2 && words.indexOf(firstParticle) > -1) {              
               return false
             }
             return true
@@ -146,11 +140,8 @@
       console.log(err);
       errors.push(err);
       return;
-    }
-    console.log("Got a valid search pattern...", re);
-    let filtered_words = words.filter((w: string) => w.match(re));
-
-    console.log("Got words:", filtered_words);
+    }    
+    let filtered_words = words.filter((w: string) => w.match(re));    
     results = filtered_words;
     return filtered_words;
   }

@@ -25,7 +25,7 @@
   $: gridLetterSize = Math.max($x, $y);
   let size = 2;
   let p: PuzzleContext = makePuzzleStore(initialLetters, xsize, ysize);
-  console.log("Made magic", p);
+  //console.log("Made magic", p);
   setContext("puzzleContext", p);
   let {
     x,
@@ -76,8 +76,7 @@
   let mode: ROW | COL = ROW; */
   let activeWord: Word | null = null;
 
-  function isInput(event) {
-    console.log("key?", event.key);
+  function isInput(event) {    
     if (event.key.length != 1) {
       return false;
     }
@@ -147,21 +146,18 @@
     }
   }
 
-  function getNextDownSquareByWord(idx, amount, word) {
-    console.log("get next by word", word);
+  function getNextDownSquareByWord(idx, amount, word) {    
     let { rn, cn } = getInfo(idx);
     let rawNext = (rn + amount) * $x + cn;
     if (word.indices.indexOf(rawNext) > -1) {
       return rawNext;
     } else {
       /* Ok we are switching words... */
-      let currentWordNumber = $numbers[word.indices[0]];
-      console.log("cw# = ", currentWordNumber);
+      let currentWordNumber = $numbers[word.indices[0]];      
       let nextWord;
       let firstWord;
       for (let w of $downs) {
-        let wordNumber = $numbers[w.indices[0]];
-        console.log("Compare to ", wordNumber);
+        let wordNumber = $numbers[w.indices[0]];        
         if (amount > 0) {
           if (
             firstWord === undefined ||
@@ -172,12 +168,10 @@
           // next
           if (wordNumber > currentWordNumber) {
             if (!nextWord) {
-              nextWord = w;
-              console.log("Sure");
+              nextWord = w;              
             } else {
               if ($numbers[w.indices[0]] < $numbers[nextWord.indices[0]]) {
-                nextWord = w;
-                console.log("Sure");
+                nextWord = w;                
               }
             }
           }
@@ -200,8 +194,7 @@
           }
         }
       }
-      if (nextWord) {
-        console.log("Have next word", nextWord);
+      if (nextWord) {        
         if (amount > 0) {
           return nextWord.indices[0];
         } else {
@@ -213,8 +206,7 @@
         } else {
           return firstWord.indices.slice(-1)[0];
         }
-      } else {
-        console.log("getNextDownSquareByWord Oops? fallback");
+      } else {        
         return idx + amount;
       }
     }
@@ -225,8 +217,7 @@
     let next = idx;
     if (lockMode && word) {
       next = getNextDownSquareByWord(idx, amount, word);
-    } else {
-      console.log("In word", word);
+    } else {      
       let { rn, cn } = getInfo(idx);
       if (rn == $y - 1 && amount > 0) {
         // end of row, moving forward
@@ -315,10 +306,8 @@
         }
         event.preventDefault();
       }
-    } else if (event.key == "*") {
-      console.log("asterix!");
-      $circles[idx] = !$circles[idx];
-      console.log(idx, "=>", $circles[idx]);
+    } else if (event.key == "*") {      
+      $circles[idx] = !$circles[idx];      
     } else if (event.code == "ArrowLeft" || event.code == "ArrowRight") {
       if ($currentCell.direction != "across") {
         let { cn, rn } = getInfo(idx);
@@ -337,8 +326,7 @@
       } else {
         moveDown(idx, (event.code == "ArrowDown" && 1) || -1);
       }
-    } else if (event.code == "Tab") {
-      console.log("Tab!", event);
+    } else if (event.code == "Tab") {      
       if (activeWord) {
         let nextWordIndex;
         if (event.shiftKey) {
@@ -420,11 +408,9 @@
   let gridWidth = 300;
   const rightSize = 150;
   $: if (windowWidth - rightSize < windowHeight) {
-    gridWidth = windowWidth - rightSize;
-    console.log("Limit to width", gridWidth);
+    gridWidth = windowWidth - rightSize;    
   } else {
-    gridWidth = windowHeight;
-    console.log("Limit to height", gridWidth);
+    gridWidth = windowHeight;    
   }
 </script>
 

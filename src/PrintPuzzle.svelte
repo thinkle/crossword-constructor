@@ -36,8 +36,8 @@
   }
   function moveClues() {
     const cols = [c1, c1, c2, c3, c4];
-    console.log("Time to move clues!");
-    console.log(clueDiv.children.length);
+    //console.log("Time to move clues!");
+    //console.log(clueDiv.children.length);
     // first approximation, divide into fifths...
     let fifth = clueDiv.children.length / 5;
     let moved = 0;
@@ -51,7 +51,7 @@
       }
       col.appendChild(child);
       moved += 1;
-      console.log("Moved ", moved, "to column", colNum, col);
+      //console.log("Moved ", moved, "to column", colNum, col);
     }
     // Now try to adjust...
     if (interval) {
@@ -70,7 +70,7 @@
     );
     let bottomest = Math.max(...bottoms);
     let bottomestCol = cols[bottoms.indexOf(bottomest)];
-    console.log(bottoms, bottomest, bottomestCol);
+    //console.log(bottoms, bottomest, bottomestCol);
     if (bottomestCol == c1) {
       moveTextRight(c1, c2);
     } else if (bottomestCol == c4) {

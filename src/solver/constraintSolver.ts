@@ -22,8 +22,7 @@ export function solveForConstraint(
     status: "solving",
     letters,
   });
-
-  console.log("Solve", letters.join(""), letters.length);
+  
   let complete: Word[] = [];
   let needResolution: Word[] = [];
   if (!byIndex) {
@@ -90,19 +89,16 @@ export function solveForConstraint(
               .map((i: number) => letters[i] || "?")
               .join("");
             if (word.indexOf("?") == -1) {
-              // we completed a word... is it real?
-              console.log("Forced to complete word...", word);
+              // we completed a word... is it real?              
               completedWords.push({ word, indices: wordIndices });
             }
           }
           for (let word of completedWords) {
-            if (dictionary.indexOf(word.word) == -1) {
-              console.log("Completed", word, "which is not a word :(");
+            if (dictionary.indexOf(word.word) == -1) {              
               return null;
             } else {
               let dup = complete.find((w) => w.word == word.word);
-              if (dup) {
-                console.log("Completed duplicate...", word, dup);
+              if (dup) {                
                 return null;
               } else {
                 complete.push(word);
