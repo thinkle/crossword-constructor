@@ -8,6 +8,7 @@
 import { get } from "svelte/store";
 import { makePuzzleStore } from "./puzzleStore";
 import type { PuzzleContext } from "./puzzleStore";
+import {filters} from './filters';
 import {words,scores} from './wordlist'
 export function getPossible(possible: {
   across: Set<string>;
@@ -45,7 +46,8 @@ export function solvePuzzle(ps: PuzzleContext) {
     downs : get(ps.downs),
     letters: get(ps.letters),
     dictionary : words.filter((w)=>scores[w]>=cutoff),
-    scores
+    scores,
+    filters : get(filters),
    });
   worker.onmessage = (ev) => {
     console.log("Got message from worker!", ev);

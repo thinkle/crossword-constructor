@@ -13,9 +13,16 @@ export function getPossibleWords(
   letters,
   across: Word[],
   down: Word[],
-  dictionary: string[]
+  dictionary: string[],
+  filters: RegExp[] = []
 ): Possible {
-  let possible = getInitialPossibleLetters(across, down, letters, dictionary);
+  let possible = getInitialPossibleLetters(
+    across,
+    down,
+    letters,
+    dictionary,
+    filters
+  );
   postMessage({
     status: "partial",
     ...possible,
@@ -51,7 +58,8 @@ function getInitialPossibleLetters(
   across: Word[],
   down: Word[],
   letters: string[],
-  dictionary
+  dictionary,
+  filters: RegExp[] = []
 ): Possible {
   let possible = {
     across: [],
@@ -62,7 +70,7 @@ function getInitialPossibleLetters(
   // First loop through the across and just get possible words...
   for (let word of across) {
     if (word.word.indexOf("?") > -1) {
-      let matches = findMatches(word.word, dictionary);
+      let matches = findMatches(word.word, dictionary, [], filters);
       possible.across[word.index] = matches;
       for (let match of matches) {
         for (let li = 0; li < match.length; li++) {

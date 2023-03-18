@@ -15,7 +15,8 @@ export function solveForConstraint(
   scores,
   byIndex?: {
     [key: number]: number[][];
-  }
+  },
+  filters: RegExp[] = []
 ) {
   postMessage({
     status: "solving",
@@ -48,7 +49,7 @@ export function solveForConstraint(
       w.matches = findMatches(
         w.word,
         dictionary,
-        complete.map((w) => w.word)
+        complete.map((w) => w.word, filters)
       );
     }); // got all possible matches...
     let possibleLettersBySquares: {

@@ -1,5 +1,7 @@
 <script lang="ts">
   import Puzzle from "./Puzzle.svelte";
+  import FilterMaker from "./FilterMaker.svelte";
+  import ThemeTools from "./ThemeTools.svelte";
   import { Mode } from "./types";
   import LetterCounter from "./LetterCounter.svelte";
   import CustomWordList from "./CustomWordList.svelte";
@@ -19,55 +21,58 @@
 </script>
 
 <main>
-  <h1 style="float:right">Tom's Puzzle Tool</h1>
-  <nav class="center tabs top">
-    <button
-      class="tab"
-      class:active={mode == Mode.PLAY}
-      on:click={() => (mode = Mode.PLAY)}
-    >
-      Play
-    </button>
-    <button
-      class="tab"
-      class:active={mode == Mode.CONSTRUCT}
-      on:click={() => (mode = Mode.CONSTRUCT)}
-    >
-      Construct
-    </button>
-    <button
-      class="tab"
-      class:active={mode == Mode.PRINT}
-      on:click={() => (mode = Mode.PRINT)}
-    >
-      Print Puzzle
-    </button>
-    <button
-      class="tab"
-      class:active={mode == Mode.SOLUTION}
-      on:click={() => (mode = Mode.SOLUTION)}
-    >
-      Print Solution
-    </button>
-    {#if mode == Mode.SOLUTION || mode == Mode.PRINT}
-      <button class="button min" on:click={() => window.print()}>
-        <i class="fa fa-print" aria-hidden="true" />
+  <header class="topbar">
+    <nav class="center tabs">
+      <button
+        class="tab"
+        class:active={mode == Mode.PLAY}
+        on:click={() => (mode = Mode.PLAY)}
+      >
+        Play
       </button>
+      <button
+        class="tab"
+        class:active={mode == Mode.CONSTRUCT}
+        on:click={() => (mode = Mode.CONSTRUCT)}
+      >
+        Construct
+      </button>
+      <button
+        class="tab"
+        class:active={mode == Mode.PRINT}
+        on:click={() => (mode = Mode.PRINT)}
+      >
+        Print Puzzle
+      </button>
+      <button
+        class="tab"
+        class:active={mode == Mode.SOLUTION}
+        on:click={() => (mode = Mode.SOLUTION)}
+      >
+        Print Solution
+      </button>
+      {#if mode == Mode.SOLUTION || mode == Mode.PRINT}
+        <button class="button min" on:click={() => window.print()}>
+          <i class="fa fa-print" aria-hidden="true" />
+        </button>
+      {/if}
+    </nav>
+    {#if mode == Mode.CONSTRUCT}
+      <div class="center">
+        <input bind:value={x} type="number" min="1" max="20" />
+        x
+        <input bind:value={y} type="number" min="1" max="20" />
+      </div>
     {/if}
-  </nav>
-  {#if mode == Mode.CONSTRUCT}
-    <div class="center">
-      <input bind:value={x} type="number" min="1" max="20" />
-      x
-      <input bind:value={y} type="number" min="1" max="20" />
-    </div>
-  {/if}
+  </header>
   <Puzzle xsize={x} ysize={y} {mode} bind:initialLetters={letters} />
   {#if mode == Mode.CONSTRUCT}
+    <FilterMaker />
     <hr />
     <!-- <h3>Letter Counter</h3> -->
     <!-- <LetterCounter /> -->
     <CustomWordList />
+    <ThemeTools />
   {/if}
 </main>
 
@@ -88,7 +93,8 @@
     margin-bottom: 1em;
   }
   main {
-    padding: 1em;
+    padding-left: 8px;
+    padding-right: 8px;
     margin: 0 auto;
   }
 
@@ -112,11 +118,13 @@
     flex-wrap: wrap;
   }
 
-  .top {
+  header {
     position: sticky;
     top: 0;
     background-color: white;
     z-index: 3;
+    display: flex;
+    justify-content: space-evenly;
   }
   nav .active {
     border-color: transparent;

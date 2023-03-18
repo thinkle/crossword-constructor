@@ -2,7 +2,7 @@ import { solveForConstraint } from "./constraintSolver";
 import { findMatches } from "./matcher";
 import {getPossibleWords} from './hinter';
 onmessage = function (event) {
-  let { mode, acrosses, downs, letters, dictionary, scores } = event.data;
+  let { mode, acrosses, downs, letters, dictionary, scores, filters } = event.data;
   if (mode == "solve") {
     let words = [
       ...acrosses.map((w) => w.indices),
@@ -10,7 +10,7 @@ onmessage = function (event) {
     ];
     let key = letters;
     // Our word is a list of indices. Our key is the "grid" of solutions.
-    let solution = solveForConstraint(words, letters, dictionary, scores);
+    let solution = solveForConstraint(words, letters, dictionary, scores, {}, filters);
     postMessage({
       status: "complete",
       letters: solution,
@@ -20,7 +20,8 @@ onmessage = function (event) {
         letters,
         acrosses,
         downs,
-        dictionary
+        dictionary,
+        filters
       )
       postMessage({
         status : 'complete',

@@ -5,9 +5,13 @@ export const scores = {};
 export const words = [];
 
 export function importWordList(lines) {
+  console.log("Importing wordlist");
   for (let line of lines) {
     let [word, score] = line.split(";");
-    word = word.replace(/[^A-Za-z]/, "").toUpperCase();
+    word = word.toUpperCase().replace(/[^A-Z]/g, "");
+    if (word.indexOf(" ") > -1) {
+      console.log("WTF!!! '${word}'");
+    }
     words.push(word);
     scores[word] = Number(score);
   }

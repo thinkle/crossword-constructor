@@ -90,12 +90,16 @@ body {
 button {
   font-family: "Verdana";
 }
+button,
 button.button {
   border-radius: 15px 15px 15px 15px;
   background-color: white;
-  border-bottom: none;
+  border: 1px solid #efefef;
 }
-button.button:hover {
+button.min {
+  border: none;
+}
+button:hover {
   border: 1px solid #8f0202;
   transition: 200ms;
 }
