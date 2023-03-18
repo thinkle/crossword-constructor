@@ -1,4 +1,10 @@
-<script>
+<script lang="ts">
+    import {
+    scoredList,    
+  } from "./customWordlistStore";    
+
+  import { words, scores, customListName, importWordList } from "./wordlist";
+  
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher();
   export let text = "";
@@ -11,9 +17,9 @@
     return words;
   }
 
-  let scoredList = [];
-  $: scoredList = processWords(text);
-  $: dispatch("change", { list: scoredList, text });
+  let newScoredList = [];
+  $: newScoredList = processWords(text);
+  $: dispatch("change", { list: newScoredList, text });
 
   function sortList() {
     let lines = text.split("\n");
@@ -23,6 +29,20 @@
     );
     text = lines.join("\n");
   }
+
+  function getCurrentStatus (word) {
+    debugger;
+    for (let w of $scoredList) {
+      if (w[0]==word) {
+        return w[1];
+      }
+    }
+    if (scores[word]) {
+      return scores[word];
+    } else {
+      return 'New!';
+    }
+  }
 </script>
 
 Score for words below: <input type="number" bind:value={score} />
@@ -30,9 +50,11 @@ Score for words below: <input type="number" bind:value={score} />
 <div>
   <textarea bind:value={text} />
   <ul class="echo">
-    {#each scoredList as item}
+    {#each newScoredList as item}
       {#if item[0]}
-        <li>{item[0]} ({item[0].length})</li>
+        <li>{item[0]} ({item[0].length})
+        [{getCurrentStatus(item[0])}]
+        </li>
       {/if}
     {/each}
   </ul>
