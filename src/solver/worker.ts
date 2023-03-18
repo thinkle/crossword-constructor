@@ -10,7 +10,7 @@ onmessage = function (event) {
     ];
     let key = letters;
     // Our word is a list of indices. Our key is the "grid" of solutions.
-    let solution = solveForConstraint(words, letters, dictionary, scores, {}, filters);
+    let solution = solveForConstraint(words, letters, dictionary, scores, null, filters);
     postMessage({
       status: "complete",
       letters: solution,
