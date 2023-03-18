@@ -14,6 +14,8 @@
   let showList: boolean = false;
   let bulkList = [];
   let bulkWLText = "";
+  let pageOffset = 1; // human counting
+  let pageSize = 10;
 </script>
 
 <div class="head">
@@ -44,7 +46,17 @@
     </button>
   {/if}
   {#if showList}
-    {#each $scoredList as item, i}
+  <div class="pageBar">
+    <label>Page: 
+      <input 
+        bind:value={pageOffset} 
+        type="number" 
+        min="1"
+        max={Math.ceil($scoredList.length/pageSize)}
+        ></label>
+    <label>Per Page: <input bind:value={pageSize} type="number" min="5" max="200"></label>
+  </div>
+    {#each $scoredList.slice((pageOffset-1)*pageSize,pageOffset*pageSize) as item, i}
       <li>
         <label>Word: <input bind:value={item[0]} /></label>
         <label
